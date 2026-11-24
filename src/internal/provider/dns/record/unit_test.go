@@ -193,7 +193,7 @@ func TestFlattenTypedBlocksPerType(t *testing.T) {
 	}
 	odd, _ := flattenRecord(ctx, dto("MX", []any{"10 mail.example.com"}), baseModel("MX"))
 	if len(odd.MX) != 0 || odd.DataJSON.IsNull() {
-		t.Errorf("unrecognised shapes must fall back to data_json: %+v", odd)
+		t.Errorf("unrecognized shapes must fall back to data_json: %+v", odd)
 	}
 }
 
@@ -267,7 +267,7 @@ func TestNormalizedJSONSemanticEquality(t *testing.T) {
 	}
 }
 
-func TestNormalizedJSONTypeBehaviour(t *testing.T) {
+func TestNormalizedJSONTypeBehavior(t *testing.T) {
 	typ := normalizedJSONType{}
 	if !typ.Equal(normalizedJSONType{}) || typ.Equal(types.StringType) || typ.String() == "" {
 		t.Errorf("type equality")
@@ -289,16 +289,16 @@ func TestSameStringValueAndNames(t *testing.T) {
 		t.Errorf("hostname vs text comparison")
 	}
 	if normalizeName("  ") != "@" || normalizeName("WWW") != "www" {
-		t.Errorf("name normalisation")
+		t.Errorf("name normalization")
 	}
 	if !sameOwnerName(nil, "@") || sameOwnerName(nil, "www") {
 		t.Errorf("apex matching")
 	}
 }
 
-func TestRecordTypeCatalogue(t *testing.T) {
+func TestRecordTypeCatalog(t *testing.T) {
 	if len(supportedTypes) != 37 {
-		t.Errorf("the backend accepts 37 types, catalogue has %d", len(supportedTypes))
+		t.Errorf("the backend accepts 37 types, catalog has %d", len(supportedTypes))
 	}
 	for _, recordType := range supportedTypes {
 		if allowedFormsDescription(recordType) == "" || len(allowedFormNames(recordType)) == 0 {

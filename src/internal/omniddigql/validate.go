@@ -45,7 +45,7 @@ func Schema() (*ast.Schema, error) {
 		return hit.schema, hit.err
 	}
 	var entry loaded
-	sdl, err := os.ReadFile(path)
+	sdl, err := os.ReadFile(path) //nolint:gosec // path is the developer-set schema file in SchemaEnv
 	if err != nil {
 		entry.err = fmt.Errorf("read %s: %w", SchemaEnv, err)
 	} else {

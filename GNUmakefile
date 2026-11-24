@@ -4,9 +4,10 @@ PROVIDER := terraform-provider-omniddi
 VERSION ?= $(shell cat VERSION)
 TF_VERSION ?= 1.17.1
 GOVULNCHECK_VERSION ?= v1.9.0
+GITLEAKS_VERSION ?= v8.30.1
 
 .DEFAULT_GOAL := build
-.PHONY: build install fmt lint test testacc docs docs-check vuln tidy version-check
+.PHONY: build install fmt lint test testacc docs docs-check vuln secrets-scan tidy version-check
 
 build:
 	cd $(SRC_DIR) && $(GO) build -trimpath -ldflags "-X main.version=$(VERSION)" -o $(PROVIDER) .
@@ -41,6 +42,9 @@ docs-check: docs
 
 vuln:
 	cd $(SRC_DIR) && $(GO) run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION) ./...
+
+secrets-scan:
+	$(GO) run github.com/zricethezav/gitleaks/v8@$(GITLEAKS_VERSION) git --redact --no-banner --exit-code 1 .
 
 tidy:
 	cd $(SRC_DIR) && $(GO) mod tidy

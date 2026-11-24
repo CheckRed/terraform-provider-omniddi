@@ -145,7 +145,7 @@ func validateShape(cfg zoneModel) diag.Diagnostics {
 	zoneType, typeKnown := zoneTypeOf(cfg)
 	hasCIDR, hasProtocol := !cfg.CIDR.IsNull(), !cfg.Protocol.IsNull()
 
-	if typeKnown && cfg.Name.IsNull() && !(zoneType == typeReverse && hasCIDR && hasProtocol) {
+	if typeKnown && cfg.Name.IsNull() && (zoneType != typeReverse || !hasCIDR || !hasProtocol) {
 		diags.AddAttributeError(path.Root("name"), "Missing zone name", "name is required, except for a Reverse zone that sets protocol and cidr.")
 	}
 	if typeKnown && zoneType != typeReverse && (hasCIDR || hasProtocol) {

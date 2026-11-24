@@ -312,7 +312,7 @@ func settingsBody(ctx context.Context, plan, prior model) (map[string]any, diag.
 	if configured(plan.EnableDDNS) && !plan.EnableDDNS.Equal(prior.EnableDDNS) {
 		body["enable_ddns"] = plan.EnableDDNS.ValueBool()
 	}
-	if configured(plan.DDNSConfigJSON) && !(configured(prior.DDNSConfigJSON) && sameJSON(plan.DDNSConfigJSON, prior.DDNSConfigJSON)) {
+	if configured(plan.DDNSConfigJSON) && (!configured(prior.DDNSConfigJSON) || !sameJSON(plan.DDNSConfigJSON, prior.DDNSConfigJSON)) {
 		if decoded, ok := canonicalJSON(plan.DDNSConfigJSON.ValueString()); ok {
 			body["ddns_config"] = decoded
 		}

@@ -261,7 +261,7 @@ func TestConcurrentCallsShareOneRefresh(t *testing.T) {
 		}
 	}
 	if got := srv.AuthCounts().Refreshes; got != 1 {
-		t.Errorf("refreshes = %d, want exactly 1 (token rotation must be serialised)", got)
+		t.Errorf("refreshes = %d, want exactly 1 (token rotation must be serialized)", got)
 	}
 }
 

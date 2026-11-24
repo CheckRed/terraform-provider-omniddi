@@ -123,7 +123,7 @@ func (s *Server) mintRefresh(user, family string) string {
 
 func refreshCookie(value string) http.Header {
 	h := http.Header{}
-	h.Add("Set-Cookie", (&http.Cookie{Name: refreshCookieName, Value: value, Path: "/api/v1/users", HttpOnly: true}).String())
+	h.Add("Set-Cookie", (&http.Cookie{Name: refreshCookieName, Value: value, Path: "/api/v1/users", HttpOnly: true, Secure: true, SameSite: http.SameSiteStrictMode}).String())
 	return h
 }
 
