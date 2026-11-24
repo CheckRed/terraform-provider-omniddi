@@ -2,14 +2,14 @@
 page_title: "omniddi Provider"
 subcategory: ""
 description: |-
-    Manage DNS, DHCP and IPAM objects in CheckRed OmniDDI. Every attribute can also be set through an OMNIDDI_* environment variable; the attribute wins when both are present.
+    Manage DNS, DHCP and IPAM objects in OmniDDI. Every attribute can also be set through an OMNIDDI_* environment variable; the attribute wins when both are present.
 ---
 
 # omniddi Provider
 
-Manage DNS, DHCP and IPAM objects in CheckRed OmniDDI. Every attribute can also be set through an `OMNIDDI_*` environment variable; the attribute wins when both are present.
+Manage DNS, DHCP and IPAM objects in OmniDDI. Every attribute can also be set through an `OMNIDDI_*` environment variable; the attribute wins when both are present.
 
-OmniDDI is CheckRed's DNS, DHCP and IP address management (DDI) platform. The provider manages DNS zones and records, IPAM containers and subnets, and DHCP subnets and host reservations through the OmniDDI management server. Views, network spaces, IPAM nodes and server groups are read through data sources.
+OmniDDI is a DNS, DHCP and IP address management (DDI) platform. The provider manages DNS zones and records, IPAM containers and subnets, and DHCP subnets and host reservations through the OmniDDI management server. Views, network spaces, IPAM nodes and server groups are read through data sources.
 
 ## Authentication
 

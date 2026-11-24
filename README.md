@@ -1,6 +1,6 @@
 # Terraform Provider for OmniDDI
 
-The OmniDDI provider lets you manage [CheckRed](https://www.checkred.com) OmniDDI — DNS, DHCP and IP address management (DDI) — as code with Terraform.
+The OmniDDI provider lets you manage OmniDDI — DNS, DHCP and IP address management (DDI) — as code with Terraform.
 
 ## What you can manage
 
