@@ -99,7 +99,7 @@ release:
     owner: CheckRed
     name: terraform-provider-omniddi
   draft: false
-  prerelease: auto
+  prerelease: true
   extra_files:
     - glob: ../terraform-registry-manifest.json
       name_template: "{{ .ProjectName }}_{{ .Version }}_manifest.json"
