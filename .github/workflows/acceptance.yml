@@ -1,4 +1,4 @@
-name: Acceptance
+name: Acceptance tests
 
 on:
   schedule:
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   acceptance:
-    name: Acceptance (${{ startsWith(github.ref_name, 'qa') && 'qa' || 'dev' }})
+    name: Acceptance tests against OmniDDI
     if: >-
       github.event_name != 'pull_request' ||
       (github.event.label.name == 'acc' && github.event.pull_request.head.repo.full_name == github.repository)
@@ -42,15 +42,19 @@ jobs:
         with:
           go-version-file: src/go.mod
           cache-dependency-path: src/go.sum
-      - name: Install Terraform
+      - name: Set up Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_version: 1.17.1
           terraform_wrapper: false
-      - name: Sweep leaked test objects
+      - name: Remove objects left by earlier runs
         continue-on-error: true
         run: go test ./internal/e2e/ -v -sweep=all -timeout 30m
       - name: Run acceptance tests
         env:
           TF_ACC: "1"
         run: go test ./... -run TestAcc -timeout 120m
+      - name: Remove objects left by this run
+        if: always()
+        continue-on-error: true
+        run: go test ./internal/e2e/ -v -sweep=all -timeout 30m
