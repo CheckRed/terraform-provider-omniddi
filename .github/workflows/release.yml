@@ -1,4 +1,5 @@
-name: Pre-release
+name: Publish pre-release
+run-name: Publish pre-release from VERSION (${{ github.event_name == 'workflow_dispatch' && 'manual' || github.ref_name }})
 
 on:
   push:
@@ -20,8 +21,9 @@ concurrency:
 
 jobs:
   prepare:
-    name: Plan release from VERSION
+    name: Plan from VERSION
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     outputs:
@@ -47,10 +49,11 @@ jobs:
         run: .github/scripts/release-plan.sh
 
   verify:
-    name: Verify ${{ needs.prepare.outputs.tag }}
+    name: Verify
     needs: prepare
     if: needs.prepare.outputs.release == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -83,11 +86,12 @@ jobs:
         run: make docs-check
 
   release:
-    name: Publish ${{ needs.prepare.outputs.tag }} as pre-release
+    name: Publish pre-release
     needs:
       - prepare
       - verify
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: PROD
     permissions:
       contents: write
@@ -150,5 +154,5 @@ jobs:
             echo
             echo "- Commit: \`${SHA}\`"
             echo "- Pre-release: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
-            echo "- To make it the full release, run the **Promote release** workflow with tag \`${TAG}\`."
+            echo "- To make it the full release, run the **Promote to full release** workflow with tag \`${TAG}\`."
           } >> "$GITHUB_STEP_SUMMARY"

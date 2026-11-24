@@ -1,4 +1,5 @@
-name: Promote release
+name: Promote to full release
+run-name: Promote ${{ inputs.tag }} to full release
 
 on:
   workflow_dispatch:
@@ -17,8 +18,9 @@ concurrency:
 
 jobs:
   promote:
-    name: Promote ${{ inputs.tag }} to full release
+    name: Promote to full release
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment: PROD
     permissions:
       contents: write
