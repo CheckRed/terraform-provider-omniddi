@@ -253,7 +253,7 @@ func (b *Backend) createContainer(r *fakeserver.Request) fakeserver.Response {
 		return bad("A container cannot be a single host address (/32 IPv4, /128 IPv6); create it as an address under a subnet instead")
 	}
 	prefix = prefix.Masked()
-	if pp, err := netip.ParsePrefix(parent.CIDR); err == nil && !(pp.Bits() <= prefix.Bits() && pp.Overlaps(prefix)) {
+	if pp, err := netip.ParsePrefix(parent.CIDR); err == nil && (pp.Bits() > prefix.Bits() || !pp.Overlaps(prefix)) {
 		return bad("Container %s is not inside parent %s", prefix, pp)
 	}
 	if b.dupCIDR(prefix.String()) {
@@ -303,7 +303,7 @@ func (b *Backend) createSubnet(r *fakeserver.Request) fakeserver.Response {
 	if parent.Type != "FAMILY" && parent.Type != "CONTAINER" {
 		return bad("Subnet parent must be FAMILY or CONTAINER, got %s", parent.Type)
 	}
-	if pp, err := netip.ParsePrefix(parent.CIDR); err == nil && !(pp.Bits() <= prefix.Bits() && pp.Overlaps(prefix)) {
+	if pp, err := netip.ParsePrefix(parent.CIDR); err == nil && (pp.Bits() > prefix.Bits() || !pp.Overlaps(prefix)) {
 		return bad("Subnet %s is not inside parent %s", prefix, pp)
 	}
 	for _, n := range b.nodes {

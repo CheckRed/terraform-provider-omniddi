@@ -383,7 +383,7 @@ func TestZoneApprovalFailModeReportsUntrackedRequest(t *testing.T) {
 func TestZoneApprovalWaitModeResumesUntrackedRequest(t *testing.T) {
 	b := newZoneBackend(t)
 	submitted := false
-	b.gate = func(method string, body map[string]any) (fakeserver.Response, bool) {
+	b.gate = func(method string, _ map[string]any) (fakeserver.Response, bool) {
 		if method != http.MethodPost || submitted {
 			return fakeserver.Response{}, false
 		}

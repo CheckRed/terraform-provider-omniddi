@@ -190,7 +190,7 @@ func TestIsNotFoundSemantics(t *testing.T) {
 	}
 }
 
-func TestBackoffDelayIsBoundedAndHonoursRetryAfter(t *testing.T) {
+func TestBackoffDelayIsBoundedAndHonorsRetryAfter(t *testing.T) {
 	tr := &transport{backoff: Backoff{Min: 10_000_000, Max: 40_000_000}}
 	for attempt := range 10 {
 		if d := tr.delay(attempt, nil); d <= 0 || d > 40_000_000 {

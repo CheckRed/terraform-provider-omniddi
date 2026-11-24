@@ -9,7 +9,7 @@ description: |-
 
 OmniDDI can require a change to be approved before it is applied. The provider's `approval_mode` controls what happens then. Set it on the provider, or override it per resource with the resource's own `approval_mode`. Resources that support it: `omniddi_dns_zone`, `omniddi_dns_record`, `omniddi_dhcp_subnet` and `omniddi_dhcp_host_reservation`. IPAM containers and subnets are applied synchronously and never wait for approval.
 
-| Mode | Behaviour |
+| Mode | Behavior |
 |---|---|
 | `fail` (default) | The apply stops with an error that names the approval request id. Nothing is saved to state for a create. |
 | `wait` | The provider polls the request until it is applied, then continues. The run holds until someone approves. |

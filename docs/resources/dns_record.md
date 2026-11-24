@@ -157,7 +157,7 @@ resource "omniddi_dns_record" "service_binding" {
 - `created_on` (String) Creation timestamp.
 - `effective_ttl` (Number) TTL in effect: the record TTL, or the zone TTL when the record has none.
 - `id` (Number) The OmniDDI record ID.
-- `is_auto_created` (Boolean) True for records created automatically during zone synchronisation. OmniDDI refuses to delete these and to toggle their values.
+- `is_auto_created` (Boolean) True for records created automatically during zone synchronization. OmniDDI refuses to delete these and to toggle their values.
 - `tags_all` (Map of String) All single-valued tags on the object, including those inherited from provider `default_tags`.
 - `updated_on` (String) Last update timestamp.
 - `view_id` (Number) ID of the DNS view that contains the zone.

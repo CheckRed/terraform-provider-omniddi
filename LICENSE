@@ -1,0 +1,75 @@
+Akamai-DDI Proprietary License
+
+Copyright (c) 2026 Akamai-DDI. All rights reserved.
+
+This license covers the Terraform Provider for OmniDDI, including its source
+code, compiled binaries, documentation and examples (the "Software").
+
+1. Ownership
+
+   The Software is the proprietary property of Akamai-DDI and is protected by
+   copyright and other intellectual property laws. Making the source code
+   publicly visible does not place it in the public domain or grant any
+   rights beyond those stated in this license. All rights not expressly
+   granted are reserved by Akamai-DDI.
+
+2. License grant
+
+   Subject to the terms of this license, Akamai-DDI grants you a
+   non-exclusive, non-transferable, non-sublicensable, revocable license to
+   install and use the Software, in unmodified form, solely to manage OmniDDI
+   deployments that you are authorized to use.
+
+3. Restrictions
+
+   Except as expressly permitted in Section 2 or with the prior written
+   permission of Akamai-DDI, you may not:
+
+   a. copy the Software, except as needed to install and use it;
+   b. modify, adapt, translate or create derivative works of the Software;
+   c. distribute, sublicense, sell, rent, lease, lend or otherwise transfer
+      the Software or any part of it to any third party;
+   d. use the Software to build or support a product or service that
+      competes with OmniDDI;
+   e. remove or alter any copyright, license or proprietary notice in the
+      Software.
+
+4. Contributions
+
+   If you submit an issue, suggestion, patch or pull request (a
+   "Contribution"), you grant Akamai-DDI a perpetual, worldwide,
+   irrevocable, royalty-free license to use, reproduce, modify and
+   distribute that Contribution as part of the Software or otherwise, and
+   you confirm that you have the right to grant this license.
+
+5. Third-party components
+
+   The Software includes or depends on third-party open-source components.
+   Those components are licensed under their own terms, which apply to them
+   in place of this license.
+
+6. Termination
+
+   This license terminates automatically if you breach any of its terms. On
+   termination you must stop using the Software and destroy all copies in
+   your possession.
+
+7. Disclaimer of warranty
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+
+8. Limitation of liability
+
+   IN NO EVENT SHALL AKAMAI-DDI BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OF OR OTHER
+   DEALINGS IN THE SOFTWARE.
+
+9. Separate agreements
+
+   If you have a separate written agreement with Akamai-DDI that covers the
+   Software, that agreement governs where it conflicts with this license.
+
+For licensing questions, contact Akamai-DDI.

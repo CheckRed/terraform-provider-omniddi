@@ -162,7 +162,7 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 	case req.Path == graphQLRoute && req.Method == http.MethodPost:
 		resp = s.serveGraphQL(req)
 	default:
-		resp = s.dispatchREST(req, w)
+		resp = s.dispatchREST(req)
 	}
 	writeResponse(w, resp)
 }
@@ -177,7 +177,7 @@ func (s *Server) consumeFailure(req *Request) int {
 	return 0
 }
 
-func (s *Server) dispatchREST(req *Request, w http.ResponseWriter) Response {
+func (s *Server) dispatchREST(req *Request) Response {
 	if resp, handled := s.serveBuiltinAuth(req); handled {
 		return resp
 	}

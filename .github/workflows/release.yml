@@ -50,7 +50,8 @@ jobs:
         run: go vet ./...
       - name: Unit tests
         run: |
-          export TF_ACC_TERRAFORM_PATH="$(command -v terraform)"
+          TF_ACC_TERRAFORM_PATH="$(command -v terraform)"
+          export TF_ACC_TERRAFORM_PATH
           go test ./... -race -timeout 20m
       - name: Scan for known vulnerabilities
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...

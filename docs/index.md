@@ -39,7 +39,7 @@ Every attribute can be set from the environment. The attribute wins when both ar
 
 - `ca_cert_pem` adds a private CA to the trusted roots.
 - `client_cert_pem` and `client_key_pem` enable mutual TLS and must be set together.
-- `proxy_url` sets an HTTP proxy. When it is unset, the standard `HTTPS_PROXY` and `NO_PROXY` variables are honoured.
+- `proxy_url` sets an HTTP proxy. When it is unset, the standard `HTTPS_PROXY` and `NO_PROXY` variables are honored.
 - `insecure = true` skips certificate verification and prints a warning on every run. Use it for development only.
 
 ## Example usage
@@ -83,7 +83,7 @@ provider "omniddi" {
 
 ### Optional
 
-- `approval_mode` (String) Behaviour when OmniDDI requires approval: `fail` (default) or `wait`. Environment variable: `OMNIDDI_APPROVAL_MODE`.
+- `approval_mode` (String) Behavior when OmniDDI requires approval: `fail` (default) or `wait`. Environment variable: `OMNIDDI_APPROVAL_MODE`.
 - `ca_cert_pem` (String) PEM-encoded CA certificate(s) to trust for the endpoint. Environment variable: `OMNIDDI_CA_CERT_PEM`.
 - `client_cert_pem` (String) PEM-encoded client certificate for mutual TLS. Environment variable: `OMNIDDI_CLIENT_CERT_PEM`.
 - `client_key_pem` (String, Sensitive) PEM-encoded private key for the client certificate. Environment variable: `OMNIDDI_CLIENT_KEY_PEM`.
@@ -94,6 +94,6 @@ provider "omniddi" {
 - `max_retries` (Number) Maximum retries for read-only calls on transient failures. Writes are never retried. Defaults to 3. Environment variable: `OMNIDDI_MAX_RETRIES`.
 - `network_space_id` (Number) Network space to work in. After signing in, the provider switches to this space. When unset, the account's landing space is used. Environment variable: `OMNIDDI_NETWORK_SPACE_ID`.
 - `password` (String, Sensitive) Password of that account. Set it through `OMNIDDI_PASSWORD` rather than in configuration. Required. Environment variable: `OMNIDDI_PASSWORD`.
-- `proxy_url` (String, Sensitive) HTTP proxy URL. When unset, `HTTPS_PROXY` and `NO_PROXY` are honoured. Environment variable: `OMNIDDI_PROXY_URL`.
+- `proxy_url` (String, Sensitive) HTTP proxy URL. When unset, `HTTPS_PROXY` and `NO_PROXY` are honored. Environment variable: `OMNIDDI_PROXY_URL`.
 - `timeout` (String) Default time to wait for a change to be applied, as a duration string such as `10m`. Defaults to `10m`. Environment variable: `OMNIDDI_TIMEOUT`.
 - `username` (String) Login name (email, or LDAP user name) of the OmniDDI account Terraform signs in as. The account's roles and permissions apply. The account must not have MFA enabled. Required. Environment variable: `OMNIDDI_USERNAME`.

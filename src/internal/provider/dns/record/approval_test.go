@@ -126,7 +126,7 @@ func TestRecordCreateAdoptsItsOwnAppliedRequest(t *testing.T) {
 	})
 }
 
-func TestRecordCreateAdoptsItsOwnAppliedNSRequestAfterBackendNormalisation(t *testing.T) {
+func TestRecordCreateAdoptsItsOwnAppliedNSRequestAfterBackendNormalization(t *testing.T) {
 	b := newRecordBackend(t)
 	applied := b.srv.StageApproval("create_record", map[string]any{
 		"zone_id": float64(testZoneID), "name": "lab", "type": "NS",

@@ -2,6 +2,7 @@ package fakeserver
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/vektah/gqlparser/v2/ast"
@@ -96,7 +97,8 @@ func (s *Server) resolveField(field *ast.Field, vars map[string]any) (any, error
 func gqlErrorEntry(err error, field string) map[string]any {
 	code := ""
 	message := err.Error()
-	if ge, ok := err.(*GraphQLError); ok {
+	var ge *GraphQLError
+	if errors.As(err, &ge) {
 		code = ge.Code
 	}
 	entry := map[string]any{"message": message, "path": []any{field}}
