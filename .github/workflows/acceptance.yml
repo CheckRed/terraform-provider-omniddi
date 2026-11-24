@@ -1,0 +1,56 @@
+name: Acceptance
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+  pull_request:
+    types:
+      - labeled
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acceptance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  acceptance:
+    name: Acceptance (${{ startsWith(github.ref_name, 'qa') && 'qa' || 'dev' }})
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.label.name == 'acc' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    environment: ${{ startsWith(github.ref_name, 'qa') && 'qa' || 'dev' }}
+    defaults:
+      run:
+        working-directory: src
+    permissions:
+      contents: read
+    env:
+      OMNIDDI_ENDPOINT: ${{ secrets.OMNIDDI_ENDPOINT }}
+      OMNIDDI_USERNAME: ${{ secrets.OMNIDDI_USERNAME }}
+      OMNIDDI_PASSWORD: ${{ secrets.OMNIDDI_PASSWORD }}
+      E2E_DNS_VIEW: ${{ vars.E2E_DNS_VIEW }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: src/go.mod
+          cache-dependency-path: src/go.sum
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.17.1
+          terraform_wrapper: false
+      - name: Sweep leaked test objects
+        continue-on-error: true
+        run: go test ./internal/e2e/ -v -sweep=all -timeout 30m
+      - name: Run acceptance tests
+        env:
+          TF_ACC: "1"
+        run: go test ./... -run TestAcc -timeout 120m
