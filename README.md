@@ -106,3 +106,7 @@ Issues and pull requests are welcome. Use [Conventional Commits](https://www.con
 ## Security
 
 Please do not report security vulnerabilities in public issues. Use GitHub's **Report a vulnerability** button on the repository's Security tab instead.
+
+## License
+
+Proprietary. Copyright (c) 2026 Akamai-DDI. All rights reserved. Use of this provider is governed by the [Akamai-DDI Proprietary License](LICENSE).
