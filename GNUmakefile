@@ -44,7 +44,7 @@ vuln:
 	cd $(SRC_DIR) && $(GO) run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION) ./...
 
 secrets-scan:
-	$(GO) run github.com/zricethezav/gitleaks/v8@$(GITLEAKS_VERSION) git --redact --no-banner --exit-code 1 .
+	$(GO) run github.com/zricethezav/gitleaks/v8@$(GITLEAKS_VERSION) git --redact --verbose --no-banner --exit-code 1 --log-opts=HEAD .
 
 tidy:
 	cd $(SRC_DIR) && $(GO) mod tidy
