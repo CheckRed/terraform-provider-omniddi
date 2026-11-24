@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 (Unreleased)
+## 1.1.0 (November 24, 2026)
 
 FEATURES:
 
