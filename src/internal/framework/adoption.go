@@ -30,7 +30,7 @@ func bodyFields(body any) map[string]any {
 	return fields
 }
 
-// payloadAgrees reports a mismatch only where both sides hold comparable values that differ after the backend's normalisation.
+// payloadAgrees reports a mismatch only where both sides hold comparable values that differ after the backend's normalization.
 func payloadAgrees(details, want map[string]any) bool {
 	for key, value := range want {
 		if got, present := details[key]; present && !valuesAgree(got, value) {

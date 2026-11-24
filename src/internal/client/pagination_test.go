@@ -165,7 +165,7 @@ func TestTaskPollingPagesUntilHasMoreIsFalse(t *testing.T) {
 	err := c.AwaitTasks(context.Background(), "corr-big")
 	var failed *client.TaskFailedError
 	if !errors.As(err, &failed) || failed.TaskID != failedID || failed.Logs != "disk full ERR" {
-		t.Fatalf("err = %v, want the failure on the third page, sanitised", err)
+		t.Fatalf("err = %v, want the failure on the third page, sanitized", err)
 	}
 }
 
@@ -220,7 +220,7 @@ func TestFindPendingRequestsPagesAndSorts(t *testing.T) {
 	}
 }
 
-func TestFindRecentlyAppliedRequestsHonoursTheWindow(t *testing.T) {
+func TestFindRecentlyAppliedRequestsHonorsTheWindow(t *testing.T) {
 	clock := newTestClock()
 	srv := fakeserver.New(t)
 	cfg := fastConfig(srv.URL())
@@ -306,7 +306,7 @@ func TestRetryAfterHTTPDateDelaysTheRetry(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(calls) != 2 || calls[1].Sub(calls[0]) < 400*time.Millisecond {
-		t.Errorf("the HTTP-date Retry-After was not honoured: %v", calls)
+		t.Errorf("the HTTP-date Retry-After was not honored: %v", calls)
 	}
 }
 
@@ -344,7 +344,7 @@ func TestMaskedContextIsSafeWithoutALogger(t *testing.T) {
 	}
 }
 
-func TestPaginateHonoursACustomVariableName(t *testing.T) {
+func TestPaginateHonorsACustomVariableName(t *testing.T) {
 	c, srv := noSchema(t)
 	var seen map[string]any
 	srv.HandleGraphQL("things", func(args map[string]any) (any, error) {

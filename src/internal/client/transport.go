@@ -123,7 +123,7 @@ func (t *transport) roundTrip(ctx context.Context, c call) (*Response, error) {
 	if err != nil {
 		return nil, &transportError{Method: c.method, Path: req.URL.Path, RequestID: requestID, Err: err}
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	payload, err := io.ReadAll(io.LimitReader(resp.Body, t.maxBytes+1))
 	if err != nil {
 		return nil, &transportError{Method: c.method, Path: req.URL.Path, RequestID: requestID, Err: err}

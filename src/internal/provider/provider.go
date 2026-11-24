@@ -128,7 +128,7 @@ func (p *OmniDDIProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 			"proxy_url": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
-				MarkdownDescription: "HTTP proxy URL. When unset, `HTTPS_PROXY` and `NO_PROXY` are honoured. Environment variable: `OMNIDDI_PROXY_URL`.",
+				MarkdownDescription: "HTTP proxy URL. When unset, `HTTPS_PROXY` and `NO_PROXY` are honored. Environment variable: `OMNIDDI_PROXY_URL`.",
 			},
 			"insecure": schema.BoolAttribute{
 				Optional:            true,
@@ -141,7 +141,7 @@ func (p *OmniDDIProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 			},
 			"approval_mode": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Behaviour when OmniDDI requires approval: `fail` (default) or `wait`. Environment variable: `OMNIDDI_APPROVAL_MODE`.",
+				MarkdownDescription: "Behavior when OmniDDI requires approval: `fail` (default) or `wait`. Environment variable: `OMNIDDI_APPROVAL_MODE`.",
 				Validators:          []validator.String{stringvalidator.OneOf(string(framework.ApprovalModeFail), string(framework.ApprovalModeWait))},
 			},
 			"max_concurrency": schema.Int64Attribute{

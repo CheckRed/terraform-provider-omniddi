@@ -94,7 +94,7 @@ func (r *recordResource) Schema(ctx context.Context, _ resource.SchemaRequest, r
 		"view_id":         computedInt("ID of the DNS view that contains the zone."),
 		"zone_name":       computedString("Name of the zone the record belongs to."),
 		"effective_ttl":   schema.Int64Attribute{Computed: true, MarkdownDescription: "TTL in effect: the record TTL, or the zone TTL when the record has none."},
-		"is_auto_created": computedBool("True for records created automatically during zone synchronisation. OmniDDI refuses to delete these and to toggle their values."),
+		"is_auto_created": computedBool("True for records created automatically during zone synchronization. OmniDDI refuses to delete these and to toggle their values."),
 		"created_on":      computedString("Creation timestamp."),
 		"updated_on":      schema.StringAttribute{Computed: true, MarkdownDescription: "Last update timestamp."},
 	}

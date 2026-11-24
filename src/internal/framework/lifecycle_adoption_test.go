@@ -302,7 +302,7 @@ func TestRecoverMissOrFailureKeepsTheOriginalError(t *testing.T) {
 	}
 }
 
-func TestRecoverRunsEvenWhenTheOperationDeadlineExpiredButNotWhenCancelled(t *testing.T) {
+func TestRecoverRunsEvenWhenTheOperationDeadlineExpiredButNotWhenCanceled(t *testing.T) {
 	srv, lc := lifecycleFixture(t, framework.ApprovalModeFail)
 	srv.HandleREST("POST", "/api/v1/things/", func(*fakeserver.Request) fakeserver.Response {
 		time.Sleep(150 * time.Millisecond)
@@ -322,12 +322,12 @@ func TestRecoverRunsEvenWhenTheOperationDeadlineExpiredButNotWhenCancelled(t *te
 		t.Fatalf("outcome = %+v, err = %v, recovery context live = %v", outcome, err, live.Load())
 	}
 
-	cancelled, stop := context.WithCancel(context.Background())
+	canceled, stop := context.WithCancel(context.Background())
 	var calls atomic.Int32
 	spec.Recover = recoverTo(5, true, &calls)
 	time.AfterFunc(40*time.Millisecond, stop)
-	if _, err := lc.Write(cancelled, spec); err == nil || calls.Load() != 0 {
-		t.Fatalf("a cancelled run must not attempt recovery: err = %v, calls = %d", err, calls.Load())
+	if _, err := lc.Write(canceled, spec); err == nil || calls.Load() != 0 {
+		t.Fatalf("a canceled run must not attempt recovery: err = %v, calls = %d", err, calls.Load())
 	}
 }
 
@@ -407,7 +407,7 @@ func TestCreateAdoptsOnlyRequestsWhosePayloadMatches(t *testing.T) {
 		{"fields the request does not store", map[string]any{"name": "x"}, true},
 		{"different values", map[string]any{"name": "x", "ttl": float64(300), "data": []any{"192.0.2.99"}}, false},
 		{"different ttl", map[string]any{"name": "x", "ttl": float64(60)}, false},
-		{"backend-normalised forms", map[string]any{
+		{"backend-normalized forms", map[string]any{
 			"name": "x", "data": "192.0.2.10", "mac": "aa:bb:cc:dd:ee:01", "ip": "2001:db8::10",
 			"ns": []any{"ns1.example.com"}, "srv": []any{map[string]any{"host": "sip.example.com", "port": "5060"}},
 			"hinfo": []any{"x86", "linux"},

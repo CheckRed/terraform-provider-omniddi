@@ -13,7 +13,7 @@ const (
 	maxServerTextBytes = 2048
 	maxLogLines        = 40
 	redactedKey        = "${1}[REDACTED]"
-	redactedBearer     = "Bearer [REDACTED]"
+	maskedAuthHeader   = "Bearer [REDACTED]"
 	redactedJWT        = "[REDACTED-JWT]"
 )
 
@@ -68,7 +68,7 @@ func cleanText(s string, keepNewlines bool) string {
 		s = strings.Join(strings.Fields(s), " ")
 	}
 	s = apiKeySecret.ReplaceAllString(s, redactedKey)
-	s = bearerSecret.ReplaceAllString(s, redactedBearer)
+	s = bearerSecret.ReplaceAllString(s, maskedAuthHeader)
 	s = jwtSecret.ReplaceAllString(s, redactedJWT)
 	return strings.TrimSpace(s)
 }
