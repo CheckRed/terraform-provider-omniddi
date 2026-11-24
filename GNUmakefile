@@ -7,7 +7,7 @@ GOVULNCHECK_VERSION ?= v1.9.0
 GITLEAKS_VERSION ?= v8.30.1
 
 .DEFAULT_GOAL := build
-.PHONY: build install fmt lint test testacc docs docs-check vuln secrets-scan tidy version-check
+.PHONY: build install fmt lint test testacc docs docs-check vuln secrets-scan tidy version-check release-notes
 
 build:
 	cd $(SRC_DIR) && $(GO) build -trimpath -ldflags "-X main.version=$(VERSION)" -o $(PROVIDER) .
@@ -54,3 +54,6 @@ version-check:
 	@grep -q '^## $(VERSION) ' CHANGELOG.md || { echo "CHANGELOG.md has no '## $(VERSION)' section" >&2; exit 1; }
 	@test -z "$(TAG)" || test "$(TAG)" = "v$(VERSION)" || { echo "Tag $(TAG) does not match VERSION $(VERSION); expected v$(VERSION)" >&2; exit 1; }
 	@test -z "$(TAG)" || ! grep -q '^## $(VERSION) (Unreleased)' CHANGELOG.md || { echo "CHANGELOG.md still marks $(VERSION) as Unreleased" >&2; exit 1; }
+
+release-notes:
+	@awk -v heading="## $(VERSION) " 'index($$0, "## ") == 1 { if (found) exit; found = (index($$0, heading) == 1); next } found' CHANGELOG.md | sed -e '/./,$$!d'
