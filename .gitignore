@@ -1,0 +1,20 @@
+ref/
+src/terraform-provider-omniddi
+src/dist/
+*.tfstate*
+.terraform/
+examples/**/.terraform.lock.hcl
+coverage.out
+*.tfvars
+*.auto.tfvars
+*.pem
+*.key
+.env*
+crash.log
+
+# End-to-end runner
+e2e/reports/
+e2e/vm.env
+e2e/demo/.demo-session
+e2e/demo/demo.tfplan
+e2e/demo/import.tf
