@@ -28,7 +28,7 @@ output "dhcp_group_names" {
 ### Optional
 
 - `name` (String) Return only the groups with exactly this name.
-- `type` (String) Return only `dns` or only `dhcp` groups.
+- `type` (String) Return only groups of this type: `dns`, `dhcp` or `analytics`.
 
 ### Read-Only
 
@@ -46,4 +46,4 @@ Read-Only:
 - `name` (String) Server group name.
 - `protocol` (String) Protocol served by a `dhcp` group.
 - `scope_id` (Number) Protocol scope id of a `dhcp` group.
-- `type` (String) `dns` or `dhcp`.
+- `type` (String) `dns`, `dhcp` or `analytics`.

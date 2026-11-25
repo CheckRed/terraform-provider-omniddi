@@ -1,11 +1,14 @@
 package servergroup_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/CheckRed/terraform-provider-omniddi/internal/acctest"
 )
@@ -77,4 +80,43 @@ data "omniddi_server_groups" "none" { name = "zzz" }
 			resource.TestCheckResourceAttr("data.omniddi_server_groups.none", "server_groups.#", "0"),
 		),
 	})
+}
+
+func TestAnalyticsGroups(t *testing.T) {
+	b := newBackend(t)
+	id := b.seed("Default Analytics", "analytics")
+	b.seed("edge", "dns")
+	runCase(t, resource.TestStep{
+		Config: dsConfig(b, `
+data "omniddi_server_groups" "analytics" { type = "analytics" }
+data "omniddi_server_group" "analytics" {
+  name = "Default Analytics"
+  type = "analytics"
+}
+`),
+		Check: resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttr("data.omniddi_server_groups.analytics", "server_groups.#", "1"),
+			resource.TestCheckResourceAttr("data.omniddi_server_groups.analytics", "server_groups.0.type", "analytics"),
+			resource.TestCheckResourceAttr("data.omniddi_server_group.analytics", "id", fmt.Sprint(id)),
+			resource.TestCheckResourceAttr("data.omniddi_server_group.analytics", "type", "analytics"),
+			resource.TestCheckResourceAttr("data.omniddi_server_group.analytics", "tags.%", "0"),
+			func(*terraform.State) error { return noTagLookupFor(b, id) },
+		),
+	})
+}
+
+func noTagLookupFor(b *backend, groupID int64) error {
+	for _, r := range b.srv.Requests() {
+		var body struct {
+			Query     string         `json:"query"`
+			Variables map[string]any `json:"variables"`
+		}
+		if json.Unmarshal(r.Body, &body) != nil || !strings.Contains(body.Query, "tagValues(") {
+			continue
+		}
+		if id, _ := body.Variables["objectId"].(float64); int64(id) == groupID {
+			return fmt.Errorf("tags of analytics group %d were looked up as %v, which has no tag type in OmniDDI", groupID, body.Variables["objectType"])
+		}
+	}
+	return nil
 }

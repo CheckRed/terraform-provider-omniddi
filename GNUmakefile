@@ -7,7 +7,7 @@ GOVULNCHECK_VERSION ?= v1.9.0
 GITLEAKS_VERSION ?= v8.30.1
 
 .DEFAULT_GOAL := build
-.PHONY: build install fmt lint test testacc docs docs-check vuln secrets-scan tidy version-check release-notes
+.PHONY: build install fmt lint test testacc docs docs-check vuln secrets-scan tidy version-check release-notes changelog-date
 
 build:
 	cd $(SRC_DIR) && $(GO) build -trimpath -ldflags "-X main.version=$(VERSION)" -o $(PROVIDER) .
@@ -57,3 +57,8 @@ version-check:
 
 release-notes:
 	@awk -v heading="## $(VERSION) " 'index($$0, "## ") == 1 { if (found) exit; found = (index($$0, heading) == 1); next } found' CHANGELOG.md | sed -e '/./,$$!d'
+
+changelog-date:
+	@grep -q '^## $(VERSION) (Unreleased)$$' CHANGELOG.md || { echo "CHANGELOG.md has no '## $(VERSION) (Unreleased)' heading to date" >&2; exit 1; }
+	@sed -i.bak 's/^## $(VERSION) (Unreleased)$$/## $(VERSION) ($(shell date -u +%Y-%m-%d))/' CHANGELOG.md && rm CHANGELOG.md.bak
+	@grep '^## $(VERSION) ' CHANGELOG.md

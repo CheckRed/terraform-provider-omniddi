@@ -1,0 +1,8 @@
+.mirror/
+.terraformrc
+.install-mode
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfvars

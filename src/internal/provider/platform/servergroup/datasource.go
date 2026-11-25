@@ -63,8 +63,8 @@ func (d *groupDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 			"type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Group type, `dns` or `dhcp`. Narrows a lookup by `name`.",
-				Validators:          []validator.String{stringvalidator.OneOf(typeDNS, typeDHCP)},
+				MarkdownDescription: "Group type: `dns`, `dhcp` or `analytics`. Narrows a lookup by `name`.",
+				Validators:          []validator.String{stringvalidator.OneOf(typeDNS, typeDHCP, typeAnalytics)},
 			},
 			"description":    schema.StringAttribute{Computed: true, MarkdownDescription: "Description of the group."},
 			"dns_vendor_id":  schema.Int64Attribute{Computed: true, MarkdownDescription: "DNS vendor id of a `dns` group."},
@@ -79,8 +79,8 @@ func (d *groupDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 					"role":      schema.StringAttribute{Computed: true, MarkdownDescription: "Lower-case role of the server in the group."},
 				}},
 			},
-			"tags":      schema.MapAttribute{Computed: true, ElementType: types.StringType, MarkdownDescription: "Single-valued tags on the group."},
-			"tags_list": schema.MapAttribute{Computed: true, ElementType: types.ListType{ElemType: types.StringType}, MarkdownDescription: "Multi-valued tags on the group."},
+			"tags":      schema.MapAttribute{Computed: true, ElementType: types.StringType, MarkdownDescription: "Single-valued tags on the group. Always empty for `analytics` groups, which OmniDDI does not tag."},
+			"tags_list": schema.MapAttribute{Computed: true, ElementType: types.ListType{ElemType: types.StringType}, MarkdownDescription: "Multi-valued tags on the group. Always empty for `analytics` groups."},
 		},
 	}
 }
@@ -127,9 +127,12 @@ func (d *groupDataSource) state(ctx context.Context, dto *groupDTO) (*dataSource
 	if diags.HasError() {
 		return nil, fmt.Errorf("map servers: %s", diags)
 	}
-	remote, err := d.pd.Client.GetTagValues(ctx, dto.tagObject(), dto.ID)
-	if err != nil {
-		return nil, err
+	var remote []client.ObjectTag
+	if object := dto.tagObject(); object != "" {
+		var err error
+		if remote, err = d.pd.Client.GetTagValues(ctx, object, dto.ID); err != nil {
+			return nil, err
+		}
 	}
 	single, multi := map[string]attr.Value{}, map[string]attr.Value{}
 	for _, tag := range remote {
