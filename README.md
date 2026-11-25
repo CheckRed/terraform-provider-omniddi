@@ -7,7 +7,7 @@ The OmniDDI provider lets you manage OmniDDI — DNS, DHCP and IP address manage
 | Area | Resources | Data sources |
 |---|---|---|
 | DNS | `omniddi_dns_zone`, `omniddi_dns_record` | `omniddi_dns_view(s)`, `omniddi_dns_zone(s)` |
-| IPAM | `omniddi_ipam_container`, `omniddi_ipam_subnet` | `omniddi_ipam_container(s)`, `omniddi_ipam_subnet(s)`, `omniddi_ipam_node` |
+| IPAM | `omniddi_ipam_container`, `omniddi_ipam_subnet`, `omniddi_ipam_address` | `omniddi_ipam_container(s)`, `omniddi_ipam_subnet(s)`, `omniddi_ipam_node` |
 | DHCP | `omniddi_dhcp_subnet`, `omniddi_dhcp_host_reservation` | — |
 | Platform | — | `omniddi_network_space(s)`, `omniddi_server_group(s)` |
 

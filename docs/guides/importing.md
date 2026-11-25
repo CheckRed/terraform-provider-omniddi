@@ -22,6 +22,7 @@ Imports set `deletion_protection = true` and `force_destroy = false`. Terraform 
 | `omniddi_dns_record` | `<view name>/<zone name>/<record name>/<type>`, with `@` for the zone apex |
 | `omniddi_ipam_container` | `<cidr>`, for example `10.0.0.0/8` |
 | `omniddi_ipam_subnet` | `<cidr>`, for example `10.10.1.0/24` |
+| `omniddi_ipam_address` | `<ip address>` or `<subnet cidr>/<ip address>`, for example `10.10.1.0/24/10.10.1.2` |
 | `omniddi_dhcp_subnet` | `<subnet cidr>`, for example `10.20.0.0/24` |
 | `omniddi_dhcp_host_reservation` | `<subnet cidr>/<reservation name>` |
 
