@@ -36,8 +36,17 @@ func sweepClient() (*client.Client, error) {
 		}
 		space = parsed
 	}
+	var insecure bool
+	if raw := os.Getenv("OMNIDDI_INSECURE"); raw != "" {
+		parsed, err := strconv.ParseBool(raw)
+		if err != nil {
+			return nil, fmt.Errorf("OMNIDDI_INSECURE: %w", err)
+		}
+		insecure = parsed
+	}
 	return client.New(context.Background(), client.Config{
 		Endpoint: os.Getenv("OMNIDDI_ENDPOINT"), Username: os.Getenv("OMNIDDI_USERNAME"), Password: os.Getenv("OMNIDDI_PASSWORD"), NetworkSpaceID: space,
+		CACertPEM: os.Getenv("OMNIDDI_CA_CERT_PEM"), Insecure: insecure,
 	})
 }
 

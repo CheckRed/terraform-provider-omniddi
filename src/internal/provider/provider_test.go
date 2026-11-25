@@ -506,7 +506,7 @@ func TestProviderExposesExactlyTheV1Surface(t *testing.T) {
 	}
 	wantResources := []string{
 		"omniddi_dhcp_host_reservation", "omniddi_dhcp_subnet", "omniddi_dns_record",
-		"omniddi_dns_zone", "omniddi_ipam_container", "omniddi_ipam_subnet",
+		"omniddi_dns_zone", "omniddi_ipam_address", "omniddi_ipam_container", "omniddi_ipam_subnet",
 	}
 	wantDataSources := []string{
 		"omniddi_dns_view", "omniddi_dns_views", "omniddi_dns_zone", "omniddi_dns_zones",

@@ -41,6 +41,7 @@ type Backend struct {
 	SubnetBody  func(body map[string]any) (fakeserver.Response, bool)
 	DefaultBU   int64
 	lastCreates []map[string]any
+	addrs       addressBook
 }
 
 func New(t testing.TB) *Backend {
@@ -85,6 +86,7 @@ func New(t testing.TB) *Backend {
 		return out, nil
 	})
 	srv.HandleGraphQL("managedSubnetsPaginated", b.subnetsPage)
+	b.registerAddresses()
 	srv.HandleGraphQL("subnetById", func(args map[string]any) (any, error) {
 		b.mu.Lock()
 		defer b.mu.Unlock()

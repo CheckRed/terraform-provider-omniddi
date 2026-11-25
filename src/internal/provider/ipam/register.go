@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/list"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 
+	"github.com/CheckRed/terraform-provider-omniddi/internal/provider/ipam/address"
 	"github.com/CheckRed/terraform-provider-omniddi/internal/provider/ipam/container"
 	"github.com/CheckRed/terraform-provider-omniddi/internal/provider/ipam/node"
 	"github.com/CheckRed/terraform-provider-omniddi/internal/provider/ipam/subnet"
@@ -12,6 +13,7 @@ import (
 
 func Resources() []func() resource.Resource {
 	var out []func() resource.Resource
+	out = append(out, address.Resources()...)
 	out = append(out, container.Resources()...)
 	out = append(out, subnet.Resources()...)
 	return out
