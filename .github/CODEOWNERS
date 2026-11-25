@@ -1,5 +1,2 @@
-# Owners for all files *  @team-leads @senior-devs
-
-# Specific directories /docs/  @docs-team /src/   @dev-team
-
-# Specific files /scripts/deploy.sh @devops-team
+# Owners of every file in the repository
+* @santosh-cr @csingh-cr @dkumar-cr
