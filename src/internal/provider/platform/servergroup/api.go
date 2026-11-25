@@ -12,6 +12,7 @@ import (
 const (
 	typeDNS            = "dns"
 	typeDHCP           = "dhcp"
+	typeAnalytics      = "analytics"
 	tagObjectDHCPGroup = "DHCP_SERVER_GROUP"
 	groupFields        = "id name description type dnsVendorId dhcpVendorId protocol protocolId"
 
@@ -59,10 +60,13 @@ func (g groupDTO) scopeID() *int64 {
 func (g groupDTO) tagObject() string { return tagObjectFor(g.Type) }
 
 func tagObjectFor(groupType string) string {
-	if strings.EqualFold(groupType, typeDHCP) {
+	switch strings.ToLower(groupType) {
+	case typeDNS:
+		return client.TagObjectDNSServerGroup
+	case typeDHCP:
 		return tagObjectDHCPGroup
 	}
-	return client.TagObjectDNSServerGroup
+	return ""
 }
 
 func fetchGroup(ctx context.Context, c *client.Client, id int64) (*groupDTO, error) {

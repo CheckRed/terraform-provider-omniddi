@@ -30,7 +30,7 @@ data "omniddi_server_group" "by_id" {
 
 - `id` (Number) Server group id. Set exactly one of `id` or `name`.
 - `name` (String) Exact server group name. Set exactly one of `id` or `name`.
-- `type` (String) Group type, `dns` or `dhcp`. Narrows a lookup by `name`.
+- `type` (String) Group type: `dns`, `dhcp` or `analytics`. Narrows a lookup by `name`.
 
 ### Read-Only
 
@@ -40,8 +40,8 @@ data "omniddi_server_group" "by_id" {
 - `protocol` (String) Protocol served by a `dhcp` group: `IPv4`, `IPv6` or `Both`.
 - `scope_id` (Number) Protocol scope id of a `dhcp` group.
 - `servers` (Attributes Set) Member servers. (see [below for nested schema](#nestedatt--servers))
-- `tags` (Map of String) Single-valued tags on the group.
-- `tags_list` (Map of List of String) Multi-valued tags on the group.
+- `tags` (Map of String) Single-valued tags on the group. Always empty for `analytics` groups, which OmniDDI does not tag.
+- `tags_list` (Map of List of String) Multi-valued tags on the group. Always empty for `analytics` groups.
 
 <a id="nestedatt--servers"></a>
 ### Nested Schema for `servers`
