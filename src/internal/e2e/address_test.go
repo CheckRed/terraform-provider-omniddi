@@ -120,10 +120,10 @@ func TestAccIPAM_AddressPublishedInDNS(t *testing.T) {
 					resource.TestCheckResourceAttrPair(recordAddr, "values.0", addressAddr, "ip_address"),
 				),
 			},
-			{ResourceName: addressAddr, ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: []string{"exclude", "timeouts"}},
+			{ResourceName: addressAddr, ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: []string{"exclude", "status", "timeouts"}},
 			{
 				ResourceName: addressAddr, ImportState: true, ImportStateVerify: true,
-				ImportStateIdFunc: addressKey(f.cidr()), ImportStateVerifyIgnore: []string{"exclude", "timeouts"},
+				ImportStateIdFunc: addressKey(f.cidr()), ImportStateVerifyIgnore: []string{"exclude", "status", "timeouts"},
 			},
 		},
 	})

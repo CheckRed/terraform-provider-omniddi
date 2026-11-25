@@ -116,7 +116,7 @@ func (r *addressResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 			},
 			"status": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Status of the address in OmniDDI, `Used` once allocated.",
+				MarkdownDescription: "Status OmniDDI reported when the address was allocated, `Used`. An imported address takes the status shown in OmniDDI's address details.",
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 		},
@@ -330,8 +330,10 @@ func (r *addressResource) refresh(ctx context.Context, m *model) error {
 	}
 	m.SubnetID = types.Int64Value(*row.SubnetID)
 	m.IPAddress = iptypes.NewIPAddressValue(ip.String())
-	m.Status = types.StringValue(row.Status)
-	if m.Name.IsNull() && row.Hostname != nil {
+	if m.Status.IsNull() || m.Status.IsUnknown() {
+		m.Status = types.StringValue(statusLabel(row.Status))
+	}
+	if m.Name.IsNull() && row.Hostname != nil && *row.Hostname != "" {
 		m.Name = framework.NewHostnameValue(*row.Hostname)
 	}
 	if m.SubnetCIDR.IsNull() || m.SubnetCIDR.IsUnknown() {

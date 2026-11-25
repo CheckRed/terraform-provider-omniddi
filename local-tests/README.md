@@ -132,4 +132,4 @@ export TF_CLI_CONFIG_FILE="$PWD/local-tests/.terraformrc"
 | `not signed by the release key` | The checksum file was not signed with the release key; do not use that release |
 | `the second plan wants changes` | The provider reports drift right after apply; run `terraform -chdir=local-tests/smoke/write plan` to see which attribute |
 | `Failed to query available provider packages` | Run the install script again; in release mode the mirror holds only the version you installed |
-| `destroy failed` | Delete the reported zone in OmniDDI by hand |
+| `could not delete tf-smoke-…` | Cleanup failed three times; the last error is printed above it. Run `SMOKE_ZONE_NAME=<that name> local-tests/scripts/smoke.sh write` again, or delete the zone in OmniDDI |

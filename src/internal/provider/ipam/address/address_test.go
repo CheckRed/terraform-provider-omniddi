@@ -116,14 +116,14 @@ func TestAddressLifecycleAndImport(t *testing.T) {
 			),
 		},
 		resource.TestStep{Config: update, PlanOnly: true},
-		resource.TestStep{ResourceName: addr, ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: []string{"timeouts"}},
+		resource.TestStep{ResourceName: addr, ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: []string{"status", "timeouts"}},
 		resource.TestStep{
 			ResourceName: addr, ImportState: true, ImportStateId: "192.0.2.3",
-			ImportStateVerify: true, ImportStateVerifyIgnore: []string{"timeouts"},
+			ImportStateVerify: true, ImportStateVerifyIgnore: []string{"status", "timeouts"},
 		},
 		resource.TestStep{
 			ResourceName: addr, ImportState: true, ImportStateId: "192.0.2.0/29/192.0.2.3",
-			ImportStateVerify: true, ImportStateVerifyIgnore: []string{"timeouts"},
+			ImportStateVerify: true, ImportStateVerifyIgnore: []string{"status", "timeouts"},
 		},
 		resource.TestStep{ResourceName: addr, ImportState: true, ImportStateKind: resource.ImportBlockWithResourceIdentity, Config: update},
 	)
