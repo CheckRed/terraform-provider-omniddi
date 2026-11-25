@@ -53,8 +53,8 @@ func (d *listDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 			"name": schema.StringAttribute{Optional: true, MarkdownDescription: "Return only the groups with exactly this name."},
 			"type": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Return only `dns` or only `dhcp` groups.",
-				Validators:          []validator.String{stringvalidator.OneOf(typeDNS, typeDHCP)},
+				MarkdownDescription: "Return only groups of this type: `dns`, `dhcp` or `analytics`.",
+				Validators:          []validator.String{stringvalidator.OneOf(typeDNS, typeDHCP, typeAnalytics)},
 			},
 			"server_groups": schema.ListNestedAttribute{
 				Computed:            true,
@@ -62,7 +62,7 @@ func (d *listDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 				NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
 					"id":             schema.Int64Attribute{Computed: true, MarkdownDescription: "Server group id."},
 					"name":           schema.StringAttribute{Computed: true, MarkdownDescription: "Server group name."},
-					"type":           schema.StringAttribute{Computed: true, MarkdownDescription: "`dns` or `dhcp`."},
+					"type":           schema.StringAttribute{Computed: true, MarkdownDescription: "`dns`, `dhcp` or `analytics`."},
 					"description":    schema.StringAttribute{Computed: true, MarkdownDescription: "Description of the group."},
 					"dns_vendor_id":  schema.Int64Attribute{Computed: true, MarkdownDescription: "DNS vendor id of a `dns` group."},
 					"dhcp_vendor_id": schema.Int64Attribute{Computed: true, MarkdownDescription: "DHCP vendor id of a `dhcp` group."},

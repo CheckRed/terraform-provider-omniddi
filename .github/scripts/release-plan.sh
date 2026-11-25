@@ -31,7 +31,7 @@ fi
 
 if grep -q "^## ${version} (Unreleased)" CHANGELOG.md; then
   if [[ "$event" == "push" && "$ref_type" == "branch" ]]; then
-    skip "CHANGELOG.md marks ${version} as Unreleased; replace (Unreleased) with the release date to publish ${tag}"
+    skip "CHANGELOG.md marks ${version} as Unreleased; run 'make changelog-date' to date it and publish ${tag}"
   fi
   fail "CHANGELOG.md still marks ${version} as Unreleased"
 fi
