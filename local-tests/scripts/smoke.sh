@@ -38,10 +38,28 @@ export TF_VAR_view_name="${SMOKE_DNS_VIEW:-${E2E_DNS_VIEW:-}}"
 export TF_VAR_zone_name="${SMOKE_ZONE_NAME:-tf-smoke-$(date +%s).example.test}"
 
 destroy() {
-  info "Deleting the test zone ${TF_VAR_zone_name}"
-  tf destroy -input=false -auto-approve >/dev/null || echo "warning: destroy failed; delete ${TF_VAR_zone_name} by hand" >&2
+  local log attempt
+  log="$(mktemp)"
+  for attempt in 1 2 3; do
+    info "Deleting the test zone ${TF_VAR_zone_name} (attempt ${attempt} of 3)"
+    if tf destroy -input=false -auto-approve >"${log}" 2>&1; then
+      rm "${log}"
+      return 0
+    fi
+    sleep 15
+  done
+  tail -n 20 "${log}" >&2
+  rm "${log}"
+  echo "error: could not delete ${TF_VAR_zone_name}; run scripts/smoke.sh write again with SMOKE_ZONE_NAME=${TF_VAR_zone_name} or delete it in OmniDDI" >&2
+  return 1
 }
-trap destroy EXIT
+
+cleanup() {
+  local status=$?
+  destroy || status=1
+  exit "${status}"
+}
+trap cleanup EXIT
 
 info "Creating test zone ${TF_VAR_zone_name} in view ${TF_VAR_view_name}"
 tf apply -input=false -auto-approve

@@ -1,6 +1,7 @@
 package ipamtest
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -12,6 +13,8 @@ import (
 )
 
 const AllocatePath = "/api/v1/ipam/next-free-ip/allocate"
+
+var errMissingGreenlet = errors.New("greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place?")
 
 type Address struct {
 	ID        int64
@@ -40,16 +43,18 @@ func coded(status int, code, detail string) fakeserver.Response {
 func (b *Backend) registerAddresses() {
 	b.addrs = addressBook{rows: map[int64]*Address{}}
 	b.Srv.HandleREST(http.MethodPost, AllocatePath, b.allocate)
-	b.Srv.HandleGraphQL("ipAddress", func(args map[string]any) (any, error) {
+	b.Srv.HandleGraphQL("ipAddress", func(map[string]any) (any, error) { return nil, errMissingGreenlet })
+	b.Srv.HandleGraphQL("ipAddresses", func(map[string]any) (any, error) { return nil, errMissingGreenlet })
+	b.Srv.HandleGraphQL("unifiedIp", func(args map[string]any) (any, error) {
 		b.mu.Lock()
 		defer b.mu.Unlock()
-		a, ok := b.addrs.rows[argInt(args["id"])]
+		a, ok := b.addrs.rows[argInt(args["ipAddressId"])]
 		if !ok {
 			return nil, nil
 		}
-		return addressJSON(a), nil
+		return managedJSON(a), nil
 	})
-	b.Srv.HandleGraphQL("ipAddresses", b.addressesPage)
+	b.Srv.HandleGraphQL("managedIpsPaginated", b.managedPage)
 }
 
 func (b *Backend) SeedAddress(a Address) int64 {
@@ -218,51 +223,41 @@ func hostRange(prefix netip.Prefix) (netip.Addr, netip.Addr) {
 	return first, last
 }
 
-func addressJSON(a *Address) map[string]any {
-	return map[string]any{"id": a.ID, "ip": a.IP, "status": a.Status, "hostname": a.Hostname, "subnetId": a.NetworkID}
+func managedJSON(a *Address) map[string]any {
+	return map[string]any{"id": a.ID, "ipAddress": a.IP, "status": managedStatus(a.Status), "hostname": a.Hostname, "subnetId": a.NetworkID}
 }
 
-func (b *Backend) addressesPage(args map[string]any) (any, error) {
+func managedStatus(raw string) string {
+	switch raw {
+	case "Active", "Expired", "Fixed", "Reserved", "Abandoned", "Excluded", "Free":
+		return strings.ToUpper(raw)
+	}
+	return "AVAILABLE"
+}
+
+func (b *Backend) managedPage(args map[string]any) (any, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	network := argInt(args["networkId"])
-	search := strings.ToLower(fmt.Sprint(args["search"]))
-	if args["search"] == nil {
-		search = ""
-	}
+	scope, _ := args["scope"].(map[string]any)
+	network := argInt(scope["scopeNodeId"])
+	page, _ := args["pagination"].(map[string]any)
+	search, _ := page["search"].(string)
+	search = strings.ToLower(strings.TrimSpace(search))
 	var matched []*Address
 	for _, a := range b.addrs.rows {
 		if network != 0 && a.NetworkID != network {
 			continue
 		}
-		if search != "" && !strings.Contains(strings.ToLower(a.IP+"/"+a.Hostname), search) {
+		if search != "" && !strings.Contains(strings.ToLower(a.IP), search) && !strings.Contains(strings.ToLower(a.Hostname), search) {
 			continue
 		}
 		matched = append(matched, a)
 	}
 	sort.Slice(matched, func(i, j int) bool { return matched[i].ID < matched[j].ID })
-	after := int64(0)
-	if cursor, ok := args["after"].(string); ok {
-		_, _ = fmt.Sscan(cursor, &after)
+	offset, limit := int(argInt(page["offset"])), int(argInt(page["limit"]))
+	items := []any{}
+	for i := offset; i < len(matched) && len(items) < limit; i++ {
+		items = append(items, managedJSON(matched[i]))
 	}
-	first := int(argInt(args["first"]))
-	edges := []any{}
-	var last int64
-	more := false
-	for _, a := range matched {
-		if a.ID <= after {
-			continue
-		}
-		if len(edges) == first {
-			more = true
-			break
-		}
-		edges = append(edges, map[string]any{"node": addressJSON(a), "cursor": fmt.Sprint(a.ID)})
-		last = a.ID
-	}
-	var end any
-	if last != 0 {
-		end = fmt.Sprint(last)
-	}
-	return map[string]any{"edges": edges, "pageInfo": map[string]any{"hasNextPage": more, "endCursor": end}, "totalCount": len(matched)}, nil
+	return map[string]any{"items": items, "total": len(matched), "hasMore": offset+len(items) < len(matched)}, nil
 }

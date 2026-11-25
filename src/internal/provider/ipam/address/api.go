@@ -17,12 +17,11 @@ const (
 	codeAllocationBusy = "ALLOCATION_BUSY"
 	codeNoFreeIP       = "NO_FREE_IP"
 
-	addressFields = `id ip status hostname subnetId`
+	addressFields = `id ipAddress status hostname subnetId`
 
-	ByIDQuery   = `query IpamAddressById($id: Int!) { ipAddress(id: $id) { ` + addressFields + ` } }`
-	SearchQuery = `query IpamAddresses($networkId: Int, $search: String, $first: Int!, $after: String) { ` +
-		`ipAddresses(networkId: $networkId, search: $search, first: $first, after: $after) { ` +
-		`edges { node { ` + addressFields + ` } } pageInfo { hasNextPage endCursor } } }`
+	ByIDQuery   = `query IpamAddressById($id: Int!) { unifiedIp(ipAddressId: $id) { ` + addressFields + ` } }`
+	SearchQuery = `query IpamAddresses($scope: IpScopeInput, $pagination: PaginationInput) { ` +
+		`managedIpsPaginated(scope: $scope, pagination: $pagination) { items { ` + addressFields + ` } hasMore } }`
 
 	searchPageSize = 100
 	maxSearchPages = 20
@@ -32,7 +31,7 @@ var AllQueries = []string{ByIDQuery, SearchQuery}
 
 type dto struct {
 	ID       int64   `json:"id"`
-	IP       string  `json:"ip"`
+	IP       string  `json:"ipAddress"`
 	Status   string  `json:"status"`
 	Hostname *string `json:"hostname"`
 	SubnetID *int64  `json:"subnetId"`
@@ -70,7 +69,7 @@ func sameName(a, b string) bool {
 
 func fetchByID(ctx context.Context, c *client.Client, id int64) (*dto, error) {
 	var out struct {
-		Address *dto `json:"ipAddress"`
+		Address *dto `json:"unifiedIp"`
 	}
 	if err := c.Query(ctx, ByIDQuery, map[string]any{"id": id}, &out); err != nil {
 		return nil, err
@@ -82,35 +81,39 @@ func fetchByID(ctx context.Context, c *client.Client, id int64) (*dto, error) {
 }
 
 func search(ctx context.Context, c *client.Client, networkID int64, text string) ([]dto, error) {
-	vars := map[string]any{"search": text, "first": searchPageSize}
+	vars := map[string]any{}
 	if networkID != 0 {
-		vars["networkId"] = networkID
+		vars["scope"] = map[string]any{"scopeNodeId": networkID, "includeDescendants": false}
 	}
 	var all []dto
 	for page := 0; page < maxSearchPages; page++ {
+		vars["pagination"] = map[string]any{"limit": searchPageSize, "offset": page * searchPageSize, "search": text}
 		var out struct {
 			Page struct {
-				Edges []struct {
-					Node dto `json:"node"`
-				} `json:"edges"`
-				PageInfo struct {
-					HasNextPage bool    `json:"hasNextPage"`
-					EndCursor   *string `json:"endCursor"`
-				} `json:"pageInfo"`
-			} `json:"ipAddresses"`
+				Items   []dto `json:"items"`
+				HasMore bool  `json:"hasMore"`
+			} `json:"managedIpsPaginated"`
 		}
 		if err := c.Query(ctx, SearchQuery, vars, &out); err != nil {
 			return nil, err
 		}
-		for _, e := range out.Page.Edges {
-			all = append(all, e.Node)
+		for _, row := range out.Page.Items {
+			if row.ID != 0 {
+				all = append(all, row)
+			}
 		}
-		if !out.Page.PageInfo.HasNextPage || out.Page.PageInfo.EndCursor == nil {
+		if !out.Page.HasMore {
 			return all, nil
 		}
-		vars["after"] = *out.Page.PageInfo.EndCursor
 	}
-	return nil, &client.PageOverflowError{Query: "ipAddresses", PageSize: searchPageSize, MaxPages: maxSearchPages}
+	return nil, &client.PageOverflowError{Query: "managedIpsPaginated", PageSize: searchPageSize, MaxPages: maxSearchPages}
+}
+
+func statusLabel(enum string) string {
+	if enum == "" {
+		return ""
+	}
+	return strings.ToUpper(enum[:1]) + strings.ToLower(enum[1:])
 }
 
 func idsHolding(rows []dto, subnetID int64, name string) map[int64]bool {

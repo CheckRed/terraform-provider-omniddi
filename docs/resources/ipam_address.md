@@ -53,7 +53,7 @@ resource "omniddi_dns_record" "web" {
 
 - `id` (Number) The OmniDDI id of the address record.
 - `ip_address` (String) The allocated address.
-- `status` (String) Status of the address in OmniDDI, `Used` once allocated.
+- `status` (String) Status OmniDDI reported when the address was allocated, `Used`. An imported address takes the status shown in OmniDDI's address details.
 - `subnet_cidr` (String) CIDR of the subnet holding the address.
 
 <a id="nestedatt--timeouts"></a>
