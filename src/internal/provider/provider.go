@@ -92,7 +92,7 @@ func (p *OmniDDIProvider) Metadata(_ context.Context, _ provider.MetadataRequest
 
 func (p *OmniDDIProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manage DNS, DHCP and IPAM objects in OmniDDI. Every attribute can also be set through an `OMNIDDI_*` environment variable; the attribute wins when both are present.",
+		MarkdownDescription: "Manage DNS, DHCP and IPAM objects in OmniDDI. Every attribute except `default_tags` can also be set through an `OMNIDDI_*` environment variable; the attribute wins when both are present.",
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
 				Optional:            true,
