@@ -510,7 +510,7 @@ func TestProviderExposesExactlyTheV1Surface(t *testing.T) {
 	}
 	wantDataSources := []string{
 		"omniddi_dns_view", "omniddi_dns_views", "omniddi_dns_zone", "omniddi_dns_zones",
-		"omniddi_ipam_container", "omniddi_ipam_containers", "omniddi_ipam_node",
+		"omniddi_ipam_container", "omniddi_ipam_containers", "omniddi_ipam_next_free_ip", "omniddi_ipam_next_free_subnet", "omniddi_ipam_node",
 		"omniddi_ipam_subnet", "omniddi_ipam_subnets", "omniddi_network_space",
 		"omniddi_network_spaces", "omniddi_server_group", "omniddi_server_groups",
 	}
