@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
@@ -151,4 +152,25 @@ func encodeJSON(value any) (string, error) {
 		return "", err
 	}
 	return string(encoded), nil
+}
+
+type keepEquivalentJSON struct{}
+
+func (keepEquivalentJSON) Description(context.Context) string {
+	return "Keeps the prior value when the configured JSON differs only in key order or whitespace."
+}
+
+func (m keepEquivalentJSON) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (keepEquivalentJSON) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if req.StateValue.IsNull() || req.PlanValue.IsNull() || req.PlanValue.IsUnknown() {
+		return
+	}
+	equal, diags := newNormalizedJSON(req.PlanValue.ValueString()).StringSemanticEquals(ctx, newNormalizedJSON(req.StateValue.ValueString()))
+	resp.Diagnostics.Append(diags...)
+	if equal {
+		resp.PlanValue = req.StateValue
+	}
 }

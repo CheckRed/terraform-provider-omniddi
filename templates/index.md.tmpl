@@ -47,6 +47,7 @@ Every attribute except `default_tags` can be set from the environment. The attri
 - `ca_cert_pem` adds a private CA to the trusted roots.
 - `client_cert_pem` and `client_key_pem` enable mutual TLS and must be set together.
 - `proxy_url` sets an HTTP proxy. When it is unset, the standard `HTTPS_PROXY` and `NO_PROXY` variables are honored.
+- The endpoint must be an `https://` URL. An `http://` endpoint is refused before anything is sent, except for `localhost` and loopback addresses.
 - `insecure = true` skips certificate verification and prints a warning on every run. Use it for development only.
 
 ## Example usage

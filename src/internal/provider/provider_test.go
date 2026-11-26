@@ -400,6 +400,11 @@ func TestProviderMetadataAndRegistration(t *testing.T) {
 
 func configureWithEndpoint(t *testing.T, endpoint string) fwprovider.ConfigureResponse {
 	t.Helper()
+	return configureWith(t, "", map[string]tftypes.Value{"endpoint": tftypes.NewValue(tftypes.String, endpoint)})
+}
+
+func configureWith(t *testing.T, terraformVersion string, set map[string]tftypes.Value) fwprovider.ConfigureResponse {
+	t.Helper()
 	clearOmniEnv(t)
 	ctx := context.Background()
 	p := omniprovider.New("1.2.3")()
@@ -410,16 +415,22 @@ func configureWithEndpoint(t *testing.T, endpoint string) fwprovider.ConfigureRe
 	for name, typ := range objType.AttributeTypes {
 		values[name] = tftypes.NewValue(typ, nil)
 	}
-	values["endpoint"] = tftypes.NewValue(tftypes.String, endpoint)
+	values["endpoint"] = tftypes.NewValue(tftypes.String, "https://omniddi.example.com")
 	values["username"] = tftypes.NewValue(tftypes.String, fakeserver.DefaultUsername)
 	values["password"] = tftypes.NewValue(tftypes.String, fakeserver.DefaultPassword)
+	for name, v := range set {
+		values[name] = v
+	}
 
 	var resp fwprovider.ConfigureResponse
-	p.Configure(ctx, fwprovider.ConfigureRequest{Config: tfsdk.Config{Schema: schemaResp.Schema, Raw: tftypes.NewValue(objType, values)}}, &resp)
+	p.Configure(ctx, fwprovider.ConfigureRequest{
+		TerraformVersion: terraformVersion,
+		Config:           tfsdk.Config{Schema: schemaResp.Schema, Raw: tftypes.NewValue(objType, values)},
+	}, &resp)
 	return resp
 }
 
-func TestConfigureWarnsAboutPlaintextHTTPOnlyForNonLoopbackHosts(t *testing.T) {
+func TestConfigureRefusesPlaintextHTTPForNonLoopbackHosts(t *testing.T) {
 	tests := map[string]bool{
 		"http://omniddi.example.com":      true,
 		"http://10.0.0.5:8000":            true,
@@ -433,20 +444,35 @@ func TestConfigureWarnsAboutPlaintextHTTPOnlyForNonLoopbackHosts(t *testing.T) {
 		"https://127.0.0.1":               false,
 		"http://omniddi.localhost.evil.x": true,
 	}
-	for endpoint, wantWarning := range tests {
+	for endpoint, wantRefused := range tests {
 		t.Run(endpoint, func(t *testing.T) {
 			resp := configureWithEndpoint(t, endpoint)
-			if resp.Diagnostics.HasError() {
-				t.Fatalf("diags = %v", resp.Diagnostics)
+			refused := false
+			for _, d := range resp.Diagnostics.Errors() {
+				refused = refused || strings.Contains(d.Summary(), "Endpoint must use HTTPS")
 			}
-			warned := false
-			for _, d := range resp.Diagnostics.Warnings() {
-				warned = warned || strings.Contains(d.Summary(), "plaintext HTTP")
+			if refused != wantRefused {
+				t.Errorf("refused = %v, want %v (%v)", refused, wantRefused, resp.Diagnostics)
 			}
-			if warned != wantWarning {
-				t.Errorf("warned = %v, want %v (%v)", warned, wantWarning, resp.Diagnostics)
+			if wantRefused && resp.ResourceData != nil {
+				t.Errorf("a refused endpoint must not produce a client")
+			}
+			if !wantRefused && resp.Diagnostics.HasError() {
+				t.Errorf("diags = %v", resp.Diagnostics)
 			}
 		})
+	}
+}
+
+func TestConfigureSkipsTLSWarningForLoopbackHTTP(t *testing.T) {
+	resp := configureWith(t, "", map[string]tftypes.Value{
+		"endpoint": tftypes.NewValue(tftypes.String, "http://127.0.0.1:8000"),
+		"insecure": tftypes.NewValue(tftypes.Bool, true),
+	})
+	for _, d := range resp.Diagnostics.Warnings() {
+		if strings.Contains(d.Summary(), "TLS verification is disabled") {
+			t.Errorf("an http:// endpoint uses no TLS, so it must not warn about TLS verification: %v", resp.Diagnostics)
+		}
 	}
 }
 
@@ -541,5 +567,34 @@ func TestProviderEmptyCredentialsFallBackToEnvironment(t *testing.T) {
 	})
 	if got := srv.AuthCounts().Logins; got == 0 {
 		t.Errorf("empty username and password must fall back to OMNIDDI_USERNAME and OMNIDDI_PASSWORD")
+	}
+}
+
+func TestConfigureWarnsBelowMinimumTerraformVersion(t *testing.T) {
+	tests := map[string]bool{
+		"1.11.4":       true,
+		"1.5.7":        true,
+		"0.15.5":       true,
+		"1.12.0":       false,
+		"1.17.1":       false,
+		"2.0.0":        false,
+		"1.13.0-beta1": false,
+		"":             false,
+		"garbage":      false,
+	}
+	for version, wantWarning := range tests {
+		t.Run(version, func(t *testing.T) {
+			resp := configureWith(t, version, nil)
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("diags = %v", resp.Diagnostics)
+			}
+			warned := false
+			for _, d := range resp.Diagnostics.Warnings() {
+				warned = warned || strings.Contains(d.Summary(), "Terraform version is below the supported minimum")
+			}
+			if warned != wantWarning {
+				t.Errorf("warned = %v, want %v (%v)", warned, wantWarning, resp.Diagnostics)
+			}
+		})
 	}
 }

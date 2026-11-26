@@ -47,6 +47,7 @@ Every attribute except `default_tags` can be set from the environment. The attri
 - `ca_cert_pem` adds a private CA to the trusted roots.
 - `client_cert_pem` and `client_key_pem` enable mutual TLS and must be set together.
 - `proxy_url` sets an HTTP proxy. When it is unset, the standard `HTTPS_PROXY` and `NO_PROXY` variables are honored.
+- The endpoint must be an `https://` URL. An `http://` endpoint is refused before anything is sent, except for `localhost` and loopback addresses.
 - `insecure = true` skips certificate verification and prints a warning on every run. Use it for development only.
 
 ## Example usage
@@ -95,7 +96,7 @@ provider "omniddi" {
 - `client_cert_pem` (String) PEM-encoded client certificate for mutual TLS. Environment variable: `OMNIDDI_CLIENT_CERT_PEM`.
 - `client_key_pem` (String, Sensitive) PEM-encoded private key for the client certificate. Environment variable: `OMNIDDI_CLIENT_KEY_PEM`.
 - `default_tags` (Map of String) Tags applied to every taggable resource, merged with the resource `tags`.
-- `endpoint` (String) Base URL of the OmniDDI management server, for example `https://omniddi.example.com`. Environment variable: `OMNIDDI_ENDPOINT`.
+- `endpoint` (String) Base URL of the OmniDDI management server, for example `https://omniddi.example.com`. It must use `https://`; `http://` is accepted only for `localhost` and loopback addresses. Environment variable: `OMNIDDI_ENDPOINT`.
 - `insecure` (Boolean) Skip TLS certificate verification. Development only. Environment variable: `OMNIDDI_INSECURE`.
 - `max_concurrency` (Number) Maximum in-flight API calls. Defaults to 8. Environment variable: `OMNIDDI_MAX_CONCURRENCY`.
 - `max_retries` (Number) Maximum retries for read-only calls on transient failures. Writes are never retried. Defaults to 3. Environment variable: `OMNIDDI_MAX_RETRIES`.
