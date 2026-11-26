@@ -68,10 +68,10 @@ TF_LOG=DEBUG terraform apply 2> apply.log
 
 | Message | Cause and action |
 |---|---|
-| `Approval required (request N)` | See the [approvals guide](approvals). |
+| `Approval required (request N)` | See the [approvals guide](approvals.md). |
 | `agent task N ... failed` | Read the task logs in the error and in OmniDDI Agent Tasks. Fix the cause and apply again. |
 | `no agent tasks found for correlation id` | The change was accepted but cannot be confirmed. Check the service account has `read_servers`. |
 | `Zone created; its first sync did not finish` | The zone is fine. Records in the same apply are reactivated if the sync retires them; see [New zones and inactive records](#new-zones-and-inactive-records). |
-| `Authentication failed` | Check `username` and `OMNIDDI_PASSWORD`, and that the account is active, has no MFA and has finished onboarding. See the [authentication guide](authentication). |
-| `Deletion protection is enabled` | See the [deletion protection guide](deletion-protection). |
-| `tag definition(s) not found` | See the [tags guide](tags). |
+| `Authentication failed` | Check `username` and `OMNIDDI_PASSWORD`, and that the account is active, has no MFA and has finished onboarding. See the [authentication guide](authentication.md). |
+| `Deletion protection is enabled` | See the [deletion protection guide](deletion-protection.md). |
+| `tag definition(s) not found` | See the [tags guide](tags.md). |
