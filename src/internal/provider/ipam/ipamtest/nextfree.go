@@ -11,25 +11,82 @@ import (
 	"github.com/CheckRed/terraform-provider-omniddi/internal/acctest/fakeserver"
 )
 
-const NextFreeSubnetPath = "/api/v1/ipam/next-free-subnet"
+const (
+	NextFreeSubnetPath = "/api/v1/ipam/next-free-subnet"
+	NextFreeIPPath     = "/api/v1/ipam/next-free-ip"
+)
 
 func (b *Backend) registerNextFreeSubnet() {
 	b.Srv.HandleREST(http.MethodGet, NextFreeSubnetPath, b.nextFreeSubnet)
+	b.Srv.HandleREST(http.MethodGet, NextFreeIPPath, b.nextFreeIP)
+}
+
+func (b *Backend) nodeByTarget(r *fakeserver.Request, idKey, cidrKey string) (*Node, bool) {
+	if raw := r.Query.Get(idKey); raw != "" {
+		id, err := strconv.ParseInt(raw, 10, 64)
+		n, ok := b.nodes[id]
+		return n, err == nil && ok
+	}
+	for _, n := range b.nodes {
+		if r.Query.Get(cidrKey) != "" && n.CIDR == r.Query.Get(cidrKey) {
+			return n, true
+		}
+	}
+	return nil, false
+}
+
+func (b *Backend) nextFreeIP(r *fakeserver.Request) fakeserver.Response {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	subnet, ok := b.nodeByTarget(r, "subnet_id", "subnet_cidr")
+	if !ok {
+		return coded(http.StatusNotFound, "SUBNET_NOT_FOUND", "Subnet was not found.")
+	}
+	if subnet.Type != "SUBNET" {
+		return coded(http.StatusBadRequest, "NOT_A_SUBNET", fmt.Sprintf("Node %d is a %s, not a subnet.", subnet.ID, subnet.Type))
+	}
+	count := 1
+	if raw := r.Query.Get("count"); raw != "" {
+		count, _ = strconv.Atoi(raw)
+	}
+	skip := map[netip.Addr]bool{}
+	for _, raw := range r.Query["exclude"] {
+		a, err := netip.ParseAddr(raw)
+		if err != nil {
+			return coded(http.StatusBadRequest, "INVALID_PARAMETER", "exclude: "+err.Error())
+		}
+		skip[a] = true
+	}
+	prefix := netip.MustParsePrefix(subnet.CIDR)
+	var found []any
+	for len(found) < count {
+		ip, ok := b.nextFree(subnet.ID, prefix, skip)
+		if !ok {
+			break
+		}
+		skip[ip] = true
+		found = append(found, ip.String())
+	}
+	switch {
+	case len(found) == 0:
+		return coded(http.StatusConflict, "NO_FREE_IP", fmt.Sprintf("No eligible address is free in %s %s.", subnet.Label, subnet.CIDR))
+	case len(found) < count:
+		return coded(http.StatusConflict, "INSUFFICIENT_FREE_IPS", fmt.Sprintf("Only %d of %d addresses are free in %s.", len(found), count, subnet.CIDR))
+	}
+	return fakeserver.JSON(http.StatusOK, map[string]any{
+		"network_space_id": 1, "subnet": map[string]any{"id": subnet.ID, "cidr": subnet.CIDR}, "addresses": found,
+	})
 }
 
 func (b *Backend) nextFreeSubnet(r *fakeserver.Request) fakeserver.Response {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	id, err := strconv.ParseInt(r.Query.Get("container_id"), 10, 64)
-	if err != nil {
-		return coded(http.StatusBadRequest, "MISSING_PARAMETER", "container_id is required.")
-	}
-	container, ok := b.nodes[id]
+	container, ok := b.nodeByTarget(r, "container_id", "container_cidr")
 	if !ok {
-		return coded(http.StatusNotFound, "CONTAINER_NOT_FOUND", fmt.Sprintf("Container %d was not found.", id))
+		return coded(http.StatusNotFound, "CONTAINER_NOT_FOUND", "Container was not found.")
 	}
 	if container.Type != "CONTAINER" {
-		return coded(http.StatusBadRequest, "NOT_A_CONTAINER", fmt.Sprintf("Node %d is a %s, not a container.", id, container.Type))
+		return coded(http.StatusBadRequest, "NOT_A_CONTAINER", fmt.Sprintf("Node %d is a %s, not a container.", container.ID, container.Type))
 	}
 	outer := netip.MustParsePrefix(container.CIDR)
 	bits, err := strconv.Atoi(r.Query.Get("prefix_length"))

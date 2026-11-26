@@ -7,6 +7,7 @@ import (
 
 	"github.com/CheckRed/terraform-provider-omniddi/internal/provider/ipam/address"
 	"github.com/CheckRed/terraform-provider-omniddi/internal/provider/ipam/container"
+	"github.com/CheckRed/terraform-provider-omniddi/internal/provider/ipam/nextfree"
 	"github.com/CheckRed/terraform-provider-omniddi/internal/provider/ipam/node"
 	"github.com/CheckRed/terraform-provider-omniddi/internal/provider/ipam/subnet"
 )
@@ -24,6 +25,7 @@ func DataSources() []func() datasource.DataSource {
 	out = append(out, container.DataSources()...)
 	out = append(out, subnet.DataSources()...)
 	out = append(out, node.DataSources()...)
+	out = append(out, nextfree.DataSources()...)
 	return out
 }
 
