@@ -22,3 +22,10 @@ resource "omniddi_ipam_subnet" "documentation_v6" {
   network_addr = "2001:db8:1::"
   prefix       = 48
 }
+
+resource "omniddi_ipam_subnet" "app" {
+  parent_id = data.omniddi_ipam_container.datacenter.id
+  prefix    = 26
+  name      = "app"
+  exclude   = ["10.10.0.0/24"]
+}
