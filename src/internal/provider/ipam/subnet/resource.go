@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/iptypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -36,6 +37,7 @@ type resourceModel struct {
 	ParentID           types.Int64        `tfsdk:"parent_id"`
 	NetworkAddr        iptypes.IPAddress  `tfsdk:"network_addr"`
 	Prefix             types.Int64        `tfsdk:"prefix"`
+	Exclude            types.Set          `tfsdk:"exclude"`
 	Protocol           types.String       `tfsdk:"protocol"`
 	Name               types.String       `tfsdk:"name"`
 	Description        types.String       `tfsdk:"description"`
@@ -96,21 +98,31 @@ func (r *subnetResource) Schema(ctx context.Context, _ resource.SchemaRequest, r
 			Computed: true,
 			MarkdownDescription: "Id of the parent `FAMILY` or `CONTAINER` node. When omitted, the subnet is placed under the deepest container that holds its CIDR. " +
 				"OmniDDI always places a subnet under the deepest containing container, so set this to the immediate parent. " +
+				"Required, and must be a `CONTAINER`, when `network_addr` is not set. " +
 				"Changing a configured value forces a new resource.",
 			PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown(), int64planmodifier.RequiresReplaceIfConfigured()},
 		},
 		"network_addr": schema.StringAttribute{
-			Required:   true,
+			Optional:   true,
+			Computed:   true,
 			CustomType: iptypes.IPAddressType{},
 			MarkdownDescription: "Network address of the subnet, for example `192.0.2.0` or `2001:db8:1::`. It must be the network address for `prefix`. " +
-				"Changing it forces a new resource.",
-			PlanModifiers: []planmodifier.String{nodeapi.RequiresReplaceIfAddressDiffers()},
+				"Leave it unset to allocate the next free `/prefix` block in the `parent_id` container; the allocated block then stays fixed. " +
+				"Changing a configured value forces a new resource.",
+			PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown(), nodeapi.RequiresReplaceIfAddressDiffers()},
 		},
 		"prefix": schema.Int64Attribute{
 			Required:            true,
 			MarkdownDescription: "Prefix length of the subnet (0-32 for IPv4, 0-128 for IPv6). Changing it forces a new resource.",
 			Validators:          []validator.Int64{int64validator.Between(0, 128)},
 			PlanModifiers:       []planmodifier.Int64{int64planmodifier.RequiresReplace()},
+		},
+		"exclude": schema.SetAttribute{
+			Optional:    true,
+			ElementType: cidrtypes.IPPrefixType{},
+			MarkdownDescription: "CIDRs the allocated block must not overlap, at most 100. Only used when `network_addr` is not set, " +
+				"and only when the block is allocated: changing it later does not move the subnet.",
+			Validators: []validator.Set{setvalidator.SizeAtMost(100)},
 		},
 		"protocol": schema.StringAttribute{
 			Optional: true,
@@ -207,6 +219,10 @@ func (r *subnetResource) ValidateConfig(ctx context.Context, req resource.Valida
 	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("network_addr"), &addr)...)
 	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("prefix"), &prefix)...)
 	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("protocol"), &protocol)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	validateAllocation(ctx, req, resp, addr)
 	if resp.Diagnostics.HasError() || addr.IsNull() || addr.IsUnknown() {
 		return
 	}
@@ -401,14 +417,19 @@ func (r *subnetResource) Create(ctx context.Context, req resource.CreateRequest,
 	ctx, cancel := framework.WithTimeout(ctx, framework.OpCreate, plan.Timeouts, r.pd, &resp.Diagnostics)
 	defer cancel()
 
-	cidr := plan.cidr()
-	lifecycle := framework.NewLifecycle(r.pd, types.StringNull())
-	outcome, err := lifecycle.Write(ctx, framework.WriteSpec{
-		Method: http.MethodPost, Path: createPath, Body: createBody(plan), Recover: r.recoverByCIDR(cidr),
-	})
+	var (
+		outcome *framework.WriteOutcome
+		err     error
+	)
+	if plan.NetworkAddr.IsUnknown() {
+		outcome, err = r.createInNextFreeBlock(ctx, &plan)
+	} else {
+		outcome, err = r.createAt(ctx, plan)
+	}
 	if framework.AppendIfErr(&resp.Diagnostics, "Unable to create IPAM subnet", err) {
 		return
 	}
+	cidr := plan.cidr()
 	resp.Diagnostics.Append(outcome.Warnings()...)
 	id, err := outcome.ResolveID(ctx, func(ctx context.Context) (int64, error) { return r.idByCIDR(ctx, cidr) }, "id")
 	if framework.AppendIfErr(&resp.Diagnostics, "Unable to determine the subnet id", err) {
@@ -515,3 +536,23 @@ func (r *subnetResource) Delete(ctx context.Context, req resource.DeleteRequest,
 }
 
 func nodePath(id int64) string { return createPath + "/" + strconv.FormatInt(id, 10) }
+
+func validateAllocation(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse, addr iptypes.IPAddress) {
+	var (
+		parent  types.Int64
+		exclude types.Set
+	)
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("parent_id"), &parent)...)
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("exclude"), &exclude)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if addr.IsNull() && parent.IsNull() {
+		resp.Diagnostics.AddAttributeError(path.Root("network_addr"), "Missing subnet address",
+			"Either set network_addr, or set parent_id to a container to allocate the next free block in it.")
+	}
+	if !addr.IsNull() && !exclude.IsNull() {
+		resp.Diagnostics.AddAttributeError(path.Root("exclude"), "exclude needs an allocated subnet",
+			"exclude only applies when network_addr is not set, because it steers which free block is allocated.")
+	}
+}

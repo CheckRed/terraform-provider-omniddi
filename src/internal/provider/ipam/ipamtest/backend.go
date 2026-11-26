@@ -87,6 +87,7 @@ func New(t testing.TB) *Backend {
 	})
 	srv.HandleGraphQL("managedSubnetsPaginated", b.subnetsPage)
 	b.registerAddresses()
+	b.registerNextFreeSubnet()
 	srv.HandleGraphQL("subnetById", func(args map[string]any) (any, error) {
 		b.mu.Lock()
 		defer b.mu.Unlock()
