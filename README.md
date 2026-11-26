@@ -13,7 +13,7 @@ The OmniDDI provider lets you manage OmniDDI — DNS, DHCP and IP address manage
 
 ## Requirements
 
-- Terraform 1.12 or later
+- Terraform 1.12 or later. Older versions get a warning, and import by resource identity needs 1.12.
 - An OmniDDI management server reachable over HTTPS
 - A dedicated OmniDDI automation account without MFA
 

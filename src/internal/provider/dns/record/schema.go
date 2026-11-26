@@ -81,6 +81,7 @@ func (r *recordResource) Schema(ctx context.Context, _ resource.SchemaRequest, r
 				"Required for AFSDB, ANAME, DS, HINFO, HTTPS, ISDN, NAPTR, PX, RP, RT, SSHFP, SVCB, TLSA and URI; optional for MX, SRV and CAA. " +
 				"Use `jsonencode`. Key order and whitespace are ignored when comparing. Object-shaped payloads (for example SVCB) are merged " +
 				"into the stored object by OmniDDI on update, so a removed key is not deleted. Numeric TLSA/SSHFP/DS fields are stored as integers.",
+			PlanModifiers: []planmodifier.String{keepEquivalentJSON{}},
 		},
 		"record_set_ordering": schema.StringAttribute{
 			Optional: true,

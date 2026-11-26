@@ -285,6 +285,8 @@ func createBody(m resourceModel) map[string]any {
 	}
 	if !m.Protocol.IsNull() && !m.Protocol.IsUnknown() {
 		body["protocol"] = m.Protocol.ValueString()
+	} else if ip, err := netip.ParseAddr(m.NetworkAddr.ValueString()); err == nil {
+		body["protocol"] = protocolOf(ip)
 	}
 	if !m.BusinessUnitID.IsNull() && !m.BusinessUnitID.IsUnknown() {
 		body["business_unit_id"] = m.BusinessUnitID.ValueInt64()
