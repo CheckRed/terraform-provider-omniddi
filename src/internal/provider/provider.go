@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/providervalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -44,10 +45,12 @@ const (
 	EnvClientKeyPEM   = "OMNIDDI_CLIENT_KEY_PEM"
 	EnvProxyURL       = "OMNIDDI_PROXY_URL"
 	EnvInsecure       = "OMNIDDI_INSECURE"
-	EnvTimeout        = "OMNIDDI_TIMEOUT"
-	EnvApprovalMode   = "OMNIDDI_APPROVAL_MODE"
-	EnvMaxConcurrency = "OMNIDDI_MAX_CONCURRENCY"
-	EnvMaxRetries     = "OMNIDDI_MAX_RETRIES"
+
+	MinimumTerraformVersion = "1.12.0"
+	EnvTimeout              = "OMNIDDI_TIMEOUT"
+	EnvApprovalMode         = "OMNIDDI_APPROVAL_MODE"
+	EnvMaxConcurrency       = "OMNIDDI_MAX_CONCURRENCY"
+	EnvMaxRetries           = "OMNIDDI_MAX_RETRIES"
 
 	defaultTimeout = 10 * time.Minute
 )
@@ -96,7 +99,7 @@ func (p *OmniDDIProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Base URL of the OmniDDI management server, for example `https://omniddi.example.com`. Environment variable: `OMNIDDI_ENDPOINT`.",
+				MarkdownDescription: "Base URL of the OmniDDI management server, for example `https://omniddi.example.com`. It must use `https://`; `http://` is accepted only for `localhost` and loopback addresses. Environment variable: `OMNIDDI_ENDPOINT`.",
 			},
 			"username": schema.StringAttribute{
 				Optional:            true,
@@ -170,6 +173,7 @@ func (p *OmniDDIProvider) ConfigValidators(context.Context) []provider.ConfigVal
 }
 
 func (p *OmniDDIProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	warnOnOldTerraform(req.TerraformVersion, &resp.Diagnostics)
 	var cfg providerModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
 	if resp.Diagnostics.HasError() {
@@ -191,10 +195,12 @@ func (p *OmniDDIProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 	ctx = client.MaskSecrets(ctx, settings.client.Password, settings.client.ClientKeyPEM, settings.client.ProxyURL)
 	if insecureTransport(settings.client.Endpoint) {
-		resp.Diagnostics.AddWarning("Endpoint uses plaintext HTTP",
-			"The endpoint is an http:// URL on a non-loopback host, so credentials and API traffic are sent unencrypted. Use an https:// endpoint.")
+		resp.Diagnostics.AddAttributeError(path.Root("endpoint"), "Endpoint must use HTTPS",
+			"The endpoint is an http:// URL on a non-loopback host, so the sign-in would send the username and password unencrypted. "+
+				"Nothing was sent. Use an https:// endpoint; http:// is accepted only for localhost and loopback addresses.")
+		return
 	}
-	if settings.client.Insecure {
+	if settings.client.Insecure && !plainHTTP(settings.client.Endpoint) {
 		resp.Diagnostics.AddWarning("TLS verification is disabled",
 			"insecure = true disables TLS certificate verification for every OmniDDI call. Use it for development only.")
 	}
@@ -244,11 +250,29 @@ func (p *OmniDDIProvider) ListResources(context.Context) []func() list.ListResou
 	return all
 }
 
-func insecureTransport(endpoint string) bool {
+var minimumTerraform = version.Must(version.NewVersion(MinimumTerraformVersion))
+
+func warnOnOldTerraform(running string, diags *diag.Diagnostics) {
+	v, err := version.NewVersion(running)
+	if err != nil || !v.LessThan(minimumTerraform) {
+		return
+	}
+	diags.AddWarning("Terraform version is below the supported minimum",
+		fmt.Sprintf("Terraform %s is running, but this provider supports Terraform %s or later. Reads and writes may work, "+
+			"but import by resource identity (import blocks with identity) needs %s. Upgrade Terraform.",
+			v, MinimumTerraformVersion, MinimumTerraformVersion))
+}
+
+func plainHTTP(endpoint string) bool {
 	u, err := url.Parse(endpoint)
-	if err != nil || u.Scheme != "http" {
+	return err == nil && strings.EqualFold(u.Scheme, "http")
+}
+
+func insecureTransport(endpoint string) bool {
+	if !plainHTTP(endpoint) {
 		return false
 	}
+	u, _ := url.Parse(endpoint)
 	host := strings.ToLower(u.Hostname())
 	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
 		return false

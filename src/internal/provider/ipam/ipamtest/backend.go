@@ -292,7 +292,10 @@ func (b *Backend) createSubnet(r *fakeserver.Request) fakeserver.Response {
 	}
 	prefix := netip.PrefixFrom(addr, int(derefInt(intField(body, "prefix")))).Masked()
 	declared := derefStr(str(body, "protocol"))
-	if declared != "" && declared != protocolOf(prefix) {
+	if declared == "" {
+		declared = "IPv4"
+	}
+	if declared != protocolOf(prefix) {
 		return bad("protocol %s does not match CIDR %s", declared, prefix)
 	}
 	parentID := b.familyRoot(protocolOf(prefix))

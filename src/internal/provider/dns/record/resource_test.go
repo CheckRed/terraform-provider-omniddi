@@ -847,3 +847,24 @@ func TestRecordPTRLifecycle(t *testing.T) {
 		resource.TestStep{ResourceName: recordAddr, ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: importIgnore},
 	)
 }
+
+func TestRecordDataJSONReorderedConfigPlansNoChange(t *testing.T) {
+	b := newRecordBackend(t)
+	svcb := func(data string) string {
+		return recordConfig(b, "  name      = \"svc\"\n  type      = \"SVCB\"\n  data_json = "+data)
+	}
+	original := svcb(`"{\"priority\":1,\"host\":\"svc.example.com\",\"alpn\":\"h2\",\"port\":8443}"`)
+	reordered := svcb(`"{\"port\":8443,\"alpn\":\"h2\",\"host\":\"svc.example.com\",\"priority\":1}"`)
+	changed := svcb(`"{\"port\":9443,\"alpn\":\"h2\",\"host\":\"svc.example.com\",\"priority\":1}"`)
+	recordCase(t,
+		resource.TestStep{Config: original},
+		resource.TestStep{Config: reordered, PlanOnly: true},
+		resource.TestStep{
+			Config: changed,
+			ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+				plancheck.ExpectResourceAction(recordAddr, plancheck.ResourceActionUpdate),
+			}},
+		},
+		resource.TestStep{Config: changed, PlanOnly: true},
+	)
+}

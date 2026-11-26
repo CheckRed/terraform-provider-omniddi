@@ -42,6 +42,7 @@ func (r *recordResource) Configure(_ context.Context, req resource.ConfigureRequ
 
 func (r *recordResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	r.pd.ModifyTagsAllPlan(ctx, req, resp)
+	framework.KeepStateWhenUnchanged(ctx, req, resp)
 }
 
 func (r *recordResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
