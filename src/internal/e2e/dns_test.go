@@ -11,10 +11,13 @@ import (
 )
 
 type dnsFixture struct {
-	view string
-	name string
-	ttl  int
+	view    string
+	name    string
+	ttl     int
+	zoneTTL int
 }
+
+var zoneImportIgnore = append([]string{"updated_on"}, commonImportIgnore...)
 
 func (f dnsFixture) zone() string { return f.name + ".test" }
 
@@ -27,11 +30,11 @@ data "omniddi_dns_view" "test" {
 resource "omniddi_dns_zone" "test" {
   view_id             = data.omniddi_dns_view.test.id
   name                = %[2]q
-  ttl                 = 3600
+  ttl                 = %[3]d
   email               = "hostmaster@%[2]s"
   deletion_protection = false
 }
-`, f.view, f.zone())
+`, f.view, f.zone(), f.zoneTTL)
 }
 
 func (f dnsFixture) withRecords() string {
@@ -85,9 +88,9 @@ func TestAccDNS_ZoneRecordsLifecycle(t *testing.T) {
 	if os.Getenv(resource.EnvTfAcc) == "" {
 		t.Skipf("acceptance tests skipped unless env %q is set", resource.EnvTfAcc)
 	}
-	f := dnsFixture{view: dnsViewName(t), name: uniqueName(), ttl: 300}
+	f := dnsFixture{view: dnsViewName(t), name: uniqueName(), ttl: 300, zoneTTL: 3600}
 	updated := f
-	updated.ttl = 120
+	updated.ttl, updated.zoneTTL = 120, 7200
 	settle := zoneSettle()
 
 	resource.Test(t, resource.TestCase{
@@ -115,13 +118,16 @@ func TestAccDNS_ZoneRecordsLifecycle(t *testing.T) {
 			},
 			{
 				Config:           updated.withRecords(),
-				ConfigPlanChecks: updatesInPlace("omniddi_dns_record.www"),
-				Check:            resource.TestCheckResourceAttr("omniddi_dns_record.www", "ttl", "120"),
+				ConfigPlanChecks: updatesInPlace("omniddi_dns_record.www", "omniddi_dns_zone.test"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("omniddi_dns_record.www", "ttl", "120"),
+					resource.TestCheckResourceAttr("omniddi_dns_zone.test", "ttl", "7200"),
+				),
 			},
-			{ResourceName: "omniddi_dns_zone.test", ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: commonImportIgnore},
+			{ResourceName: "omniddi_dns_zone.test", ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: zoneImportIgnore},
 			{
 				ResourceName: "omniddi_dns_zone.test", ImportState: true, ImportStateVerify: true,
-				ImportStateIdFunc: naturalKey(f.view, f.zone()), ImportStateVerifyIgnore: commonImportIgnore,
+				ImportStateIdFunc: naturalKey(f.view, f.zone()), ImportStateVerifyIgnore: zoneImportIgnore,
 			},
 			{ResourceName: "omniddi_dns_record.www", ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: commonImportIgnore},
 			{

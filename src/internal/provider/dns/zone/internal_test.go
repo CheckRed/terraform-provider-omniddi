@@ -87,8 +87,11 @@ func TestParseZoneReadsConfigAndSOA(t *testing.T) {
 		t.Fatal(err)
 	}
 	r := parseZone(&dto)
-	if *r.TTL != 3600 || *r.Minimum != 300 || *r.Expiry != 604800 || *r.Refresh != 900 || *r.SOASerial != 7 {
-		t.Errorf("SOA values must win over config: %+v", r)
+	if *r.TTL != 100 {
+		t.Errorf("the configured TTL must win over a stale SOA: %+v", r)
+	}
+	if *r.Minimum != 300 || *r.Expiry != 604800 || *r.Refresh != 900 || *r.SOASerial != 7 {
+		t.Errorf("SOA values must fill settings missing from the config: %+v", r)
 	}
 	if *r.Email != "h@example.com" || *r.PrimaryNameServer != "198.51.100.7" || *r.Policy != "first" || *r.CIDR != "192.0.2.0/24" {
 		t.Errorf("strings: %+v", r)
@@ -280,12 +283,19 @@ func TestFillComputedKeepsConfiguredValues(t *testing.T) {
 	dto := &zoneDTO{ID: 1, Name: "a.example.com", ConfigJSON: map[string]any{"ttl": float64(10), "email": "x@example.com"}, RecordsCount: ptr(int64(9))}
 	m := baseModel()
 	m.TTL = types.Int64Value(77)
+	m.EnableDNSSEC = types.BoolNull()
+	m.Email = types.StringUnknown()
+	planned := m
 	framework.SettleUnknowns(ctx, &m)
-	if diags := m.fillComputed(ctx, dto); diags.HasError() {
+	dto.ConfigJSON["dnssec"] = map[string]any{"enable": false}
+	if diags := m.fillComputed(ctx, dto, planned); diags.HasError() {
 		t.Fatal(diags)
 	}
 	if m.TTL.ValueInt64() != 77 || m.Email.ValueString() != "x@example.com" || m.RecordsCount.ValueInt64() != 9 {
 		t.Errorf("configured values must survive and computed ones be filled: %+v", m)
+	}
+	if !m.EnableDNSSEC.IsNull() {
+		t.Errorf("a value planned as null must stay null, got %s", m.EnableDNSSEC)
 	}
 }
 

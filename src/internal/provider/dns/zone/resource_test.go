@@ -81,7 +81,7 @@ func TestZoneLifecycleUpdateImportAndNoDiff(t *testing.T) {
 				resource.TestCheckResourceAttr(zoneAddr, "enable_dnssec", "true"),
 				resource.TestCheckResourceAttr(zoneAddr, "zone_transfer_tsig_key_id", "12"),
 				resource.TestCheckResourceAttr(zoneAddr, "business_unit_ids.#", "1"),
-				resource.TestCheckNoResourceAttr(zoneAddr, "enable_dynamic_dns"),
+				resource.TestCheckResourceAttr(zoneAddr, "enable_dynamic_dns", "false"),
 				resource.TestCheckNoResourceAttr(zoneAddr, "primary_servers.#"),
 				func(*terraform.State) error {
 					z := b.first()
@@ -128,6 +128,29 @@ func TestZoneLifecycleUpdateImportAndNoDiff(t *testing.T) {
 	if b.count() != 0 {
 		t.Errorf("zone was not deleted at the end of the test")
 	}
+}
+
+func TestZoneFirstUpdateWithUnsetFeatureFlagsIsConsistent(t *testing.T) {
+	b := newZoneBackend(t)
+	b.fillFlagsOnUpdate = true
+	cfg := func(ttl int) string {
+		return zoneConfig(b, fmt.Sprintf(`
+  name                = "flags.example.com"
+  email               = "hostmaster@example.com"
+  ttl                 = %d
+  deletion_protection = false
+`, ttl))
+	}
+	zoneCase(t,
+		resource.TestStep{Config: cfg(3600), Check: resource.ComposeAggregateTestCheckFunc(
+			resource.TestCheckResourceAttr(zoneAddr, "enable_dnssec", "false"),
+			resource.TestCheckResourceAttr(zoneAddr, "enable_dynamic_dns", "false"),
+			resource.TestCheckResourceAttr(zoneAddr, "enable_zone_transfer", "false"),
+		)},
+		resource.TestStep{Config: cfg(7200), Check: resource.TestCheckResourceAttr(zoneAddr, "ttl", "7200")},
+		resource.TestStep{Config: cfg(7200), PlanOnly: true},
+		resource.TestStep{ResourceName: zoneAddr, ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: importIgnore},
+	)
 }
 
 func TestZoneNameCaseAndTrailingDotDoNotCauseDiffs(t *testing.T) {

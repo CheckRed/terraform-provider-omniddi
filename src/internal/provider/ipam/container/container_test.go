@@ -2,6 +2,7 @@ package container_test
 
 import (
 	"fmt"
+	"net/http"
 	"regexp"
 	"testing"
 
@@ -48,6 +49,38 @@ func run(t *testing.T, steps ...resource.TestStep) {
 func ptr[T any](v T) *T { return &v }
 
 var ignoreOnImport = []string{"deletion_protection", "force_destroy", "reparent_children_on_destroy", "timeouts"}
+
+func TestContainerRejectsAncestorThatIsNotTheImmediateParent(t *testing.T) {
+	b := ipamtest.New(t)
+	top := b.Seed(ipamtest.Node{Type: "CONTAINER", CIDR: "198.18.244.0/23", Label: "top"})
+	mid := b.Seed(ipamtest.Node{Type: "CONTAINER", CIDR: "198.18.244.0/24", Label: "mid"})
+	leaf := func(parent int64) string {
+		return config(b, fmt.Sprintf(`
+  parent_id           = %d
+  name                = "leaf"
+  cidr                = "198.18.244.0/25"
+  deletion_protection = false
+`, parent))
+	}
+	run(t,
+		resource.TestStep{
+			Config:      leaf(top),
+			ExpectError: regexp.MustCompile(fmt.Sprintf(`(?s)parent_id is not the immediate parent.*"mid"\s+\(id\s+%d,\s+198\.18\.244\.0/24\).*parent_id\s+=\s+%d.*Nothing\s+was\s+created`, mid, mid)),
+		},
+		resource.TestStep{
+			Config: leaf(mid),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("omniddi_ipam_container.test", "parent_id", fmt.Sprint(mid)),
+				func(*terraform.State) error {
+					if got := len(b.Srv.RequestsFor(http.MethodPost, "/api/v1/ipam/containers")); got != 1 {
+						return fmt.Errorf("container create calls = %d, want 1 (the rejected leaf must not be sent)", got)
+					}
+					return nil
+				},
+			),
+		},
+	)
+}
 
 func TestContainerLifecycleTagsAndImport(t *testing.T) {
 	b := ipamtest.New(t)
@@ -169,6 +202,14 @@ resource "omniddi_ipam_container" "outer" {
   deletion_protection = false
 }
 `
+	mid := `
+resource "omniddi_ipam_container" "mid" {
+  parent_id           = omniddi_ipam_container.outer.id
+  name                = "mid"
+  cidr                = "10.0.0.0/12"
+  deletion_protection = false
+}
+`
 	inner := func(parent, cidr string) string {
 		return config(b, fmt.Sprintf(`
   parent_id           = %s
@@ -182,7 +223,7 @@ resource "omniddi_ipam_container" "outer" {
 	run(t,
 		resource.TestStep{Config: inner("omniddi_ipam_container.outer.id", "10.1.0.0/16"), Check: resource.TestCheckResourceAttr(addr, "cidr", "10.1.0.0/16")},
 		resource.TestStep{Config: inner("omniddi_ipam_container.outer.id", "10.2.0.0/16"), ConfigPlanChecks: replace},
-		resource.TestStep{Config: inner("1", "10.2.0.0/16"), ConfigPlanChecks: replace},
+		resource.TestStep{Config: inner("omniddi_ipam_container.mid.id", "10.2.0.0/16") + mid, ConfigPlanChecks: replace},
 	)
 }
 
@@ -257,14 +298,14 @@ deletion_protection = false`)
 
 func TestContainerKeepsConfiguredAncestorAsParent(t *testing.T) {
 	b := ipamtest.New(t)
-	b.Seed(ipamtest.Node{Type: "CONTAINER", CIDR: "10.0.0.0/8", Label: "outer"})
-	cfg := config(b, `
-parent_id = 1
+	outer := b.Seed(ipamtest.Node{Type: "CONTAINER", CIDR: "10.0.0.0/8", Label: "outer"})
+	cfg := config(b, fmt.Sprintf(`
+parent_id = %d
 name = "inner"
 cidr = "10.1.0.0/16"
-deletion_protection = false`)
+deletion_protection = false`, outer))
 	run(t,
-		resource.TestStep{Config: cfg, Check: resource.TestCheckResourceAttr(addr, "parent_id", "1")},
+		resource.TestStep{Config: cfg, Check: resource.TestCheckResourceAttr(addr, "parent_id", fmt.Sprint(outer))},
 		resource.TestStep{Config: cfg, PlanOnly: true},
 		resource.TestStep{
 			PreConfig: func() { b.Seed(ipamtest.Node{Type: "CONTAINER", CIDR: "10.1.0.0/12", Label: "between"}) },
