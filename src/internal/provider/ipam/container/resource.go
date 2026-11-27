@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/cidrtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -90,7 +91,8 @@ func (r *containerResource) Schema(ctx context.Context, _ resource.SchemaRequest
 		"parent_id": schema.Int64Attribute{
 			Required: true,
 			MarkdownDescription: "Id of the parent `FAMILY` or `CONTAINER` node (see the `omniddi_ipam_node` data source). " +
-				"OmniDDI places a container under the deepest container that holds its CIDR, so use the immediate parent. " +
+				"OmniDDI places a container under the deepest container that holds its CIDR, so use the immediate parent; " +
+				"the provider refuses to create the container when another container under `parent_id` already holds its CIDR. " +
 				"Changing it forces a new resource.",
 			PlanModifiers: []planmodifier.Int64{int64planmodifier.RequiresReplace()},
 		},
@@ -314,6 +316,9 @@ func (r *containerResource) Create(ctx context.Context, req resource.CreateReque
 	defer cancel()
 
 	cidr := plan.CIDR.ValueString()
+	if !r.checkImmediateParent(ctx, plan, &resp.Diagnostics) {
+		return
+	}
 	lifecycle := framework.NewLifecycle(r.pd, types.StringNull())
 	outcome, err := lifecycle.Write(ctx, framework.WriteSpec{
 		Method: http.MethodPost, Path: createPath, Body: r.createBody(plan), Recover: r.recoverByCIDR(cidr),
@@ -345,6 +350,33 @@ func (r *containerResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+}
+
+func (r *containerResource) checkImmediateParent(ctx context.Context, plan resourceModel, diags *diag.Diagnostics) bool {
+	prefix, err := nodeapi.ParsePrefix(plan.CIDR.ValueString())
+	if err != nil {
+		return true
+	}
+	parentID := plan.ParentID.ValueInt64()
+	deeper, err := nodeapi.DeepestContainerBelow(ctx, r.pd.Client, parentID, prefix)
+	if framework.AppendIfErr(diags, "Unable to check the container's parent", err) {
+		return false
+	}
+	if deeper == nil {
+		return true
+	}
+	diags.AddAttributeError(path.Root("parent_id"), "parent_id is not the immediate parent", fmt.Sprintf(
+		"OmniDDI places a container under the deepest container that holds its CIDR, so %s would go under container %q (id %d, %s), not under node %d. "+
+			"Set parent_id = %d, for example by referencing that container's id, so the state and the destroy order match OmniDDI. Nothing was created.",
+		prefix.Masked(), deeper.Label, deeper.ID, nodeCIDR(*deeper), parentID, deeper.ID))
+	return false
+}
+
+func nodeCIDR(n nodeapi.Node) string {
+	if n.CIDR == nil {
+		return "no CIDR"
+	}
+	return *n.CIDR
 }
 
 func (r *containerResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {

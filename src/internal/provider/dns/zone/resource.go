@@ -124,12 +124,12 @@ func (r *zoneResource) readInto(ctx context.Context, m *zoneModel) error {
 	return r.refreshTags(ctx, m)
 }
 
-func (r *zoneResource) completeWrite(ctx context.Context, m *zoneModel) error {
+func (r *zoneResource) completeWrite(ctx context.Context, m *zoneModel, planned zoneModel) error {
 	dto, err := fetchZone(ctx, r.pd.Client, m.ID.ValueInt64())
 	if err != nil {
 		return err
 	}
-	if diags := m.fillComputed(ctx, dto); diags.HasError() {
+	if diags := m.fillComputed(ctx, dto, planned); diags.HasError() {
 		return fmt.Errorf("map zone: %s", diags)
 	}
 	tags, diags := r.pd.TagsAfterApply(ctx, m.Tags, m.TagsList)
@@ -193,6 +193,7 @@ func (r *zoneResource) Create(ctx context.Context, req resource.CreateRequest, r
 		plan.Name = framework.NewFQDNValue(firstNonEmpty(createdName(outcome), name))
 	}
 	plan.TagsAll, _ = r.pd.PlannedTagsAll(ctx, plan.Tags)
+	planned := plan
 	resp.Diagnostics.Append(framework.SettleUnknowns(ctx, &plan)...)
 	resp.Diagnostics.Append(framework.SetIdentity(ctx, resp.Identity, id)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -215,7 +216,7 @@ func (r *zoneResource) Create(ctx context.Context, req resource.CreateRequest, r
 		framework.CreateFailedAfterSave(ctx, resp, "Zone tags could not be applied", err)
 		return
 	}
-	if err := r.completeWrite(ctx, &plan); err != nil {
+	if err := r.completeWrite(ctx, &plan, planned); err != nil {
 		framework.CreateFailedAfterSave(ctx, resp, "Zone could not be read back", err)
 		return
 	}
@@ -294,8 +295,9 @@ func (r *zoneResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		framework.UpdateFailedAfterWrite(req, resp, "Zone tags could not be applied", err)
 		return
 	}
+	planned := plan
 	resp.Diagnostics.Append(framework.SettleUnknowns(ctx, &plan)...)
-	if err := r.completeWrite(ctx, &plan); err != nil {
+	if err := r.completeWrite(ctx, &plan, planned); err != nil {
 		framework.UpdateFailedAfterWrite(req, resp, "Zone could not be read back", err)
 		return
 	}

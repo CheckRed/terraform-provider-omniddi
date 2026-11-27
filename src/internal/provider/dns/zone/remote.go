@@ -56,6 +56,14 @@ func firstInt(values ...*int64) *int64 {
 	return nil
 }
 
+func featureEnabled(cfg map[string]any, block, flat string) *bool {
+	if enabled := blockEnable(cfg, block, flat); enabled != nil {
+		return enabled
+	}
+	disabled := false
+	return &disabled
+}
+
 func blockEnable(cfg map[string]any, block, flat string) *bool {
 	switch v := cfg[block].(type) {
 	case map[string]any:
@@ -101,21 +109,21 @@ func parseZone(dto *zoneDTO) zoneRemote {
 		soa = &soaDTO{}
 	}
 	r := zoneRemote{
-		TTL:                  firstInt(soa.TTL.int64(), asInt64(cfg["ttl"])),
-		Refresh:              firstInt(soa.Refresh.int64(), asInt64(cfg["refresh"])),
-		Retry:                firstInt(soa.Retry.int64(), asInt64(cfg["retry"])),
-		Expiry:               firstInt(soa.Expire.int64(), asInt64(cfg["expiry"])),
-		Minimum:              firstInt(soa.Nttl.int64(), asInt64(cfg["minimum"])),
+		TTL:                  firstInt(asInt64(cfg["ttl"]), soa.TTL.int64()),
+		Refresh:              firstInt(asInt64(cfg["refresh"]), soa.Refresh.int64()),
+		Retry:                firstInt(asInt64(cfg["retry"]), soa.Retry.int64()),
+		Expiry:               firstInt(asInt64(cfg["expiry"]), soa.Expire.int64()),
+		Minimum:              firstInt(asInt64(cfg["minimum"]), soa.Nttl.int64()),
 		SOASerial:            soa.Serial.int64(),
 		Email:                asString(cfg["email"]),
 		PrimaryNameServer:    soa.PrimaryNameServer,
 		Policy:               asString(cfg["policy"]),
 		Protocol:             asString(cfg["protocol"]),
 		CIDR:                 asString(cfg["cidr"]),
-		EnableDynamicDNS:     blockEnable(cfg, "dynamic_dns", "enable_dynamic_dns"),
-		EnableDNSSEC:         blockEnable(cfg, "dnssec", "enable_dnssec"),
+		EnableDynamicDNS:     featureEnabled(cfg, "dynamic_dns", "enable_dynamic_dns"),
+		EnableDNSSEC:         featureEnabled(cfg, "dnssec", "enable_dnssec"),
 		AutoCreatePTRRecords: asBool(cfg["auto_create_ptr_records"]),
-		EnableZoneTransfer:   blockEnable(cfg, "zone_transfer", "enable_zone_transfer"),
+		EnableZoneTransfer:   featureEnabled(cfg, "zone_transfer", "enable_zone_transfer"),
 		SecureSync:           asBool(cfg["secure_sync"]),
 	}
 	if servers, ok := cfg["primary_servers"].([]any); ok {
