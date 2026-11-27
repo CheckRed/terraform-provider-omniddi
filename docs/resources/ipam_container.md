@@ -48,7 +48,7 @@ resource "omniddi_ipam_container" "datacenter" {
 
 - `cidr` (String) The address block the container covers, as a CIDR whose address is the network address, for example `10.0.0.0/16` or `2001:db8::/32`. It must sit inside the parent and cannot be a single host. Changing it forces a new resource.
 - `name` (String) Name of the container.
-- `parent_id` (Number) Id of the parent `FAMILY` or `CONTAINER` node (see the `omniddi_ipam_node` data source). OmniDDI places a container under the deepest container that holds its CIDR, so use the immediate parent. Changing it forces a new resource.
+- `parent_id` (Number) Id of the parent `FAMILY` or `CONTAINER` node (see the `omniddi_ipam_node` data source). OmniDDI places a container under the deepest container that holds its CIDR, so use the immediate parent; the provider refuses to create the container when another container under `parent_id` already holds its CIDR. Changing it forces a new resource.
 
 ### Optional
 

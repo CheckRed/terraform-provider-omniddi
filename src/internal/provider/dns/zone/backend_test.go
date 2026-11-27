@@ -52,6 +52,8 @@ type zoneBackend struct {
 	gate      func(method string, body map[string]any) (fakeserver.Response, bool)
 	legacy    bool
 	viewID    int64
+	// fillFlagsOnUpdate stores every unset feature flag as disabled on an update, as the appliance does.
+	fillFlagsOnUpdate bool
 }
 
 func newZoneBackend(t *testing.T) *zoneBackend {
@@ -303,6 +305,13 @@ func (b *zoneBackend) update(r *fakeserver.Request) fakeserver.Response {
 		return fakeserver.Detail(http.StatusNotFound, "Zone not found")
 	}
 	b.apply(z, body)
+	if b.fillFlagsOnUpdate {
+		for _, block := range []string{"dynamic_dns", "dnssec", "zone_transfer"} {
+			if _, set := z.Config[block]; !set {
+				z.Config[block] = map[string]any{"enable": false}
+			}
+		}
+	}
 	return fakeserver.JSON(http.StatusAccepted, b.tasks().Merge(map[string]any{"zone_id": id}))
 }
 

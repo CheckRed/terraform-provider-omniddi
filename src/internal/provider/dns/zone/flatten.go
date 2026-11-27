@@ -164,40 +164,48 @@ func (m *zoneModel) fillVolatile(dto *zoneDTO, r zoneRemote) {
 	m.UpdatedOn = dnskit.StringPointer(dto.UpdatedOn)
 }
 
-func (m *zoneModel) fillComputed(ctx context.Context, dto *zoneDTO) diag.Diagnostics {
+func (m *zoneModel) fillComputed(ctx context.Context, dto *zoneDTO, planned zoneModel) diag.Diagnostics {
 	fresh := *m
 	diags := fresh.readAll(ctx, dto)
 	if m.Name.IsNull() || m.Name.IsUnknown() {
 		m.Name = fresh.Name
 	}
-	for _, pair := range []struct{ dst, src *types.Int64 }{
-		{&m.TTL, &fresh.TTL}, {&m.Refresh, &fresh.Refresh}, {&m.Retry, &fresh.Retry},
-		{&m.Expiry, &fresh.Expiry}, {&m.Minimum, &fresh.Minimum},
+	for _, f := range []struct {
+		dst, src *types.Int64
+		planned  types.Int64
+	}{
+		{&m.TTL, &fresh.TTL, planned.TTL}, {&m.Refresh, &fresh.Refresh, planned.Refresh}, {&m.Retry, &fresh.Retry, planned.Retry},
+		{&m.Expiry, &fresh.Expiry, planned.Expiry}, {&m.Minimum, &fresh.Minimum, planned.Minimum},
+		{&m.SecondarySyncTsigKeyID, &fresh.SecondarySyncTsigKeyID, planned.SecondarySyncTsigKeyID},
 	} {
-		if pair.dst.IsNull() {
-			*pair.dst = *pair.src
+		if f.planned.IsUnknown() {
+			*f.dst = *f.src
 		}
 	}
-	for _, pair := range []struct{ dst, src *types.String }{
-		{&m.Email, &fresh.Email}, {&m.PrimaryNameServer, &fresh.PrimaryNameServer}, {&m.Policy, &fresh.Policy},
+	for _, f := range []struct {
+		dst, src *types.String
+		planned  types.String
+	}{
+		{&m.Email, &fresh.Email, planned.Email}, {&m.PrimaryNameServer, &fresh.PrimaryNameServer, planned.PrimaryNameServer},
+		{&m.Policy, &fresh.Policy, planned.Policy},
 	} {
-		if pair.dst.IsNull() {
-			*pair.dst = *pair.src
+		if f.planned.IsUnknown() {
+			*f.dst = *f.src
 		}
 	}
-	for _, pair := range []struct{ dst, src *types.Bool }{
-		{&m.EnableDynamicDNS, &fresh.EnableDynamicDNS}, {&m.EnableDNSSEC, &fresh.EnableDNSSEC},
-		{&m.AutoCreatePTRRecords, &fresh.AutoCreatePTRRecords}, {&m.EnableZoneTransfer, &fresh.EnableZoneTransfer},
-		{&m.SecureSync, &fresh.SecureSync},
+	for _, f := range []struct {
+		dst, src *types.Bool
+		planned  types.Bool
+	}{
+		{&m.EnableDynamicDNS, &fresh.EnableDynamicDNS, planned.EnableDynamicDNS}, {&m.EnableDNSSEC, &fresh.EnableDNSSEC, planned.EnableDNSSEC},
+		{&m.AutoCreatePTRRecords, &fresh.AutoCreatePTRRecords, planned.AutoCreatePTRRecords},
+		{&m.EnableZoneTransfer, &fresh.EnableZoneTransfer, planned.EnableZoneTransfer}, {&m.SecureSync, &fresh.SecureSync, planned.SecureSync},
 	} {
-		if pair.dst.IsNull() {
-			*pair.dst = *pair.src
+		if f.planned.IsUnknown() {
+			*f.dst = *f.src
 		}
 	}
-	if m.SecondarySyncTsigKeyID.IsNull() {
-		m.SecondarySyncTsigKeyID = fresh.SecondarySyncTsigKeyID
-	}
-	if m.BusinessUnitIDs.IsNull() {
+	if planned.BusinessUnitIDs.IsUnknown() {
 		m.BusinessUnitIDs = fresh.BusinessUnitIDs
 	}
 	m.SOASerial, m.RecordsCount, m.ViewName = fresh.SOASerial, fresh.RecordsCount, fresh.ViewName
